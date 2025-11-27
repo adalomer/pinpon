@@ -1,101 +1,109 @@
-# 🏓 Ping Pong Online
+# 🏓 3D Ping Pong - Masa Tenisi
 
-Gerçek zamanlı online multiplayer masa tenisi oyunu. Fizik tabanlı falso sistemi, lobi desteği ve modern UI ile!
+Gerçek 3D masa tenisi oyunu! Three.js ile geliştirilmiş, fizik tabanlı falso sistemi, gerçekçi masa ve file, online multiplayer desteği.
 
 ## 🎮 Özellikler
 
-### Oyun Modları
-- **🌐 Online Oyna**: Arkadaşlarınla 4 haneli kod ile oyna
-- **🤖 Bota Karşı**: Yapay zeka rakibine karşı pratik yap
-- **🎯 Antrenman**: Tek başına top kontrolü çalış
+### 3D Oyun Dünyası
+- **Gerçekçi Masa**: Yeşil masa, beyaz çizgiler, ayaklar
+- **File**: Direkleri ve ağı ile gerçekçi file
+- **Raket**: Kırmızı ve siyah kauçuk yüzeyli raket
+- **Top**: Parıltılı, spin göstergeli top
+- **Ortam**: Neon ışıklar, grid zemin, yıldızlar
 
 ### Fizik Sistemi
-- **Magnus Etkisi**: Gerçekçi top eğrisi
-- **Topspin**: Raket aşağı hareket ederken vuruş → Top aşağı eğrilir
-- **Backspin**: Raket yukarı hareket ederken vuruş → Top yukarı eğrilir
-- **Sidespin**: Raketin kenar kısmıyla vuruş → Top yana eğrilir
-- **Duvar Sekmesi**: Spin'li toplar duvardan farklı açıyla döner
+- **Magnus Etkisi**: Spin'li toplar eğrilir
+- **Topspin** 🟠: Raketi ileri iterek vur → Top aşağı eğrilir
+- **Backspin** 🟢: Raketi geri çekerek vur → Top yukarı eğrilir
+- **Sidespin** 🟡: Raketi yana iterek vur → Top yana eğrilir
+- **Yerçekimi & Hava Direnci**: Gerçekçi top fiziği
 
-### Görsel Efektler
-- Neon parıltı efektleri
-- Top izi (trail) sistemi
-- Spin göstergesi (renk kodlu)
-- Parçacık efektleri
-- Ekran sarsıntısı
-- Flash efektleri
+### Kamera Sistemi
+- Fare ile raket kontrolü
+- Kamera raketi ve topu takip eder
+- Sağa-sola hareket ettikçe kamera kayar
 
-## 🚀 Kurulum
+### Oyun Modları
+- **🌐 Online**: 4 haneli kod ile arkadaşlarla
+- **🤖 Bot**: Yapay zeka rakip
+- **🎯 Antrenman**: Kolay mod pratik
 
-### Sadece Tarayıcıda (Offline Mod)
+## 🚀 Nasıl Oynanır
+
+### Başlatma
 ```bash
-# index.html dosyasını tarayıcıda aç
-# LocalStorage ile aynı tarayıcıda 2 sekme açarak test edebilirsin
+# 3D versiyonu tarayıcıda aç
+# index-3d.html dosyasını tarayıcıda aç
+
+# VEYA 2D versiyonu için
+# index.html dosyasını aç
 ```
 
-### Sunucu ile (Online Mod)
-```bash
-# Bağımlılıkları yükle
-npm install
-
-# Sunucuyu başlat
-npm start
-
-# Tarayıcıda aç
-http://localhost:3000
-```
-
-## 🎯 Kontroller
+### Kontroller
 
 | Kontrol | İşlev |
 |---------|-------|
 | **Fare Hareketi** | Raketi kontrol et |
-| **Hızlı Hareket** | Falso ekle (yukarı/aşağı) |
-| **SPACE** | Power Shot şarj et |
-| **Click** | Power Shot şarj et |
+| **Hızlı İleri İtme** | Topspin (top aşağı eğrilir) |
+| **Hızlı Geri Çekme** | Backspin (top yukarı eğrilir) |
+| **Hızlı Sağa/Sola** | Sidespin (top yana eğrilir) |
 | **ESC** | Oyunu duraklat |
-| **M** | Sesi aç/kapat |
 
-## 🏆 Nasıl Falso Atılır?
+## 🏆 Falso Nasıl Atılır?
 
-### Topspin (Turuncu 🟠)
-1. Raketi **aşağı doğru hızlıca hareket ettir**
-2. Topa vur
-3. Top aşağı doğru eğrilecek
+### Topspin (Turuncu Parıltı 🟠)
+```
+1. Topun geleceğini hesapla
+2. Raketi hızlıca İLERİ doğru hareket ettir
+3. Topa vur
+4. Top masa üzerinde aşağı doğru eğrilecek
+→ Rakip için zor yakalanır!
+```
 
-### Backspin (Yeşil 🟢)
-1. Raketi **yukarı doğru hızlıca hareket ettir**
-2. Topa vur
-3. Top yukarı doğru eğrilecek
+### Backspin (Yeşil Parıltı 🟢)
+```
+1. Topun geleceğini hesapla  
+2. Raketi hızlıca GERİ doğru çek
+3. Topa vur
+4. Top havada yukarı doğru eğrilecek
+→ Yavaşlar ve kısa düşer!
+```
 
-### Sidespin (Sarı 🟡)
-1. Raketin **üst veya alt kısmıyla** vur
-2. Hızlı hareket et
-3. Top yana doğru eğrilecek
-
-## 🌐 Online Oynama
-
-1. **Oda Oluştur** butonuna tıkla
-2. 4 haneli kodu arkadaşınla paylaş
-3. Arkadaşın kodu girer ve oyun başlar!
+### Sidespin (Sarı Parıltı 🟡)
+```
+1. Topun geleceğini hesapla
+2. Raketi hızlıca SAĞA veya SOLA hareket ettir
+3. Topa vur
+4. Top yana doğru eğrilecek
+→ Rakibi yanıltır!
+```
 
 ## 📁 Dosya Yapısı
 
 ```
 pinpon/
-├── index.html      # Ana HTML dosyası
-├── game-v2.js      # Oyun motoru (gelişmiş)
-├── server.js       # Socket.io sunucusu
+├── index-3d.html   # 3D Oyun (Three.js)
+├── game-3d.js      # 3D Oyun Motoru
+├── index.html      # 2D Oyun (Canvas)
+├── game-v2.js      # 2D Oyun Motoru
+├── server.js       # Socket.io Sunucusu (opsiyonel)
 ├── package.json    # Node.js bağımlılıkları
 └── README.md       # Bu dosya
 ```
 
 ## 🛠️ Teknolojiler
 
-- **Frontend**: Vanilla JavaScript, Canvas 2D
-- **Backend**: Node.js, Express, Socket.io
-- **Fizik**: Özel fizik motoru (Magnus etkisi)
+- **3D Grafik**: Three.js
+- **Fizik**: Özel fizik motoru (Magnus etkisi, yerçekimi)
 - **Ses**: Web Audio API
-- **Styling**: CSS3 Animations, Gradients
+- **Online**: LocalStorage (demo), Socket.io (server)
+
+## 🎯 İpuçları
+
+1. **Spin'i Gözle**: Topun etrafındaki renkli halka spin yönünü gösterir
+2. **Hızlı Hareket**: Ne kadar hızlı hareket edersen o kadar çok spin
+3. **Zamanlama**: Topa doğru anda vur, geç kalma
+4. **Karışık Oyna**: Farklı spin'leri karıştır, rakibi şaşırt
 
 ## 📜 Lisans
 
@@ -103,4 +111,4 @@ MIT License
 
 ---
 
-🎮 İyi oyunlar!
+� İyi oyunlar!
