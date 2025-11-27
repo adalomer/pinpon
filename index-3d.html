@@ -26,6 +26,12 @@
             left: 0;
             width: 100%;
             height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+        
+        #game-canvas.active {
+            pointer-events: auto;
         }
 
         /* ==================== MENU ====================  */
@@ -469,13 +475,13 @@
             <p class="game-subtitle">MASA TENİSİ</p>
             
             <div class="menu-buttons">
-                <button class="menu-btn btn-online" onclick="showLobby()">
+                <button class="menu-btn btn-online" id="btn-online">
                     🌐 Online Oyna
                 </button>
-                <button class="menu-btn btn-bot" onclick="startBotGame()">
+                <button class="menu-btn btn-bot" id="btn-bot">
                     🤖 Bota Karşı
                 </button>
-                <button class="menu-btn btn-practice" onclick="startPractice()">
+                <button class="menu-btn btn-practice" id="btn-practice">
                     🎯 Antrenman
                 </button>
             </div>
@@ -558,7 +564,7 @@
         <button class="menu-btn btn-back" onclick="quitGame()">🚪 Oyundan Çık</button>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.150.0/build/three.min.js"></script>
     <script src="game-3d-fixed.js"></script>
 </body>
 </html>
