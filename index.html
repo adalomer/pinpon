@@ -570,7 +570,18 @@
         <button class="menu-btn btn-back" onclick="quitGame()">🚪 Oyundan Çık</button>
     </div>
 
-    <script src="https://unpkg.com/three@0.160.0/build/three.js"></script>
-    <script src="game.js"></script>
+    <script>
+        // Socket.io yoksa boş bir mock oluştur
+        if (typeof io === 'undefined') {
+            window.io = function() {
+                return {
+                    connected: false,
+                    on: function() {},
+                    emit: function() {}
+                };
+            };
+        }
+    </script>
+    <script src="game-v2.js"></script>
 </body>
 </html>
