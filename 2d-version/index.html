@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏓 3D Ping Pong - Masa Tenisi</title>
+    <title>🏓 Ping Pong Online</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         * {
@@ -14,27 +14,13 @@
 
         body {
             font-family: 'Rajdhani', sans-serif;
-            background: #0a0a1a;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0a0a1a 100%);
             min-height: 100vh;
             overflow: hidden;
             color: white;
         }
 
-        #game-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-            pointer-events: none;
-        }
-        
-        #game-canvas.active {
-            pointer-events: auto;
-        }
-
-        /* ==================== MENU ====================  */
+        /* ==================== MENU EKRANI ==================== */
         #menu-screen {
             position: fixed;
             top: 0;
@@ -61,7 +47,7 @@
 
         .game-logo {
             font-family: 'Orbitron', sans-serif;
-            font-size: 3.5rem;
+            font-size: 4rem;
             font-weight: 900;
             background: linear-gradient(45deg, #00f5ff, #ff00ff, #00f5ff);
             background-size: 200% 200%;
@@ -154,18 +140,7 @@
             box-shadow: 0 0 50px rgba(0, 255, 136, 0.6);
         }
 
-        .btn-back {
-            background: rgba(255, 255, 255, 0.1);
-            color: #888;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .btn-back:hover {
-            background: rgba(255, 255, 255, 0.2);
-            color: #fff;
-        }
-
-        /* ==================== LOBBY ====================  */
+        /* ==================== LOBBY EKRANI ==================== */
         #lobby-screen {
             position: fixed;
             top: 0;
@@ -269,6 +244,12 @@
             color: #fff;
         }
 
+        .btn-back {
+            background: rgba(255, 255, 255, 0.1);
+            color: #888;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
         .waiting-text {
             font-size: 1.2rem;
             color: #00f5ff;
@@ -298,11 +279,18 @@
             color: #000;
         }
 
-        /* ==================== GAME UI ====================  */
+        /* ==================== OYUN EKRANI ==================== */
         #game-screen {
             display: none;
+            width: 100%;
+            height: 100vh;
         }
 
+        #game-canvas {
+            display: block;
+        }
+
+        /* Skor Tablosu */
         #score-board {
             position: fixed;
             top: 20px;
@@ -340,31 +328,35 @@
             color: #444;
         }
 
-        #countdown {
+        /* Oyun Bilgileri */
+        #game-info {
             position: fixed;
-            top: 50%;
+            bottom: 20px;
             left: 50%;
-            transform: translate(-50%, -50%);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 8rem;
-            font-weight: 900;
-            color: #00f5ff;
-            text-shadow: 0 0 50px rgba(0, 245, 255, 0.8);
-            z-index: 300;
-            display: none;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 30px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.9rem;
+            color: #666;
+            z-index: 100;
         }
 
+        /* Mesaj Overlay */
         #message-overlay {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: 900;
             text-align: center;
             z-index: 200;
             display: none;
         }
 
+        /* Pause Menü */
         #pause-menu {
             position: fixed;
             top: 0;
@@ -387,6 +379,68 @@
             margin-bottom: 40px;
         }
 
+        /* Settings Panel */
+        #settings-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+
+        .settings-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .settings-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
+        }
+
+        /* Volume Slider */
+        .volume-control {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 20px;
+            border-radius: 10px;
+            display: none;
+            z-index: 100;
+        }
+
+        .volume-control.active {
+            display: block;
+        }
+
+        .volume-slider {
+            width: 120px;
+            accent-color: #00f5ff;
+        }
+
+        /* Countdown */
+        #countdown {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 8rem;
+            font-weight: 900;
+            color: #00f5ff;
+            text-shadow: 0 0 50px rgba(0, 245, 255, 0.8);
+            z-index: 300;
+            display: none;
+        }
+
+        /* Ping Göstergesi */
         #ping-display {
             position: fixed;
             top: 20px;
@@ -396,61 +450,6 @@
             color: #00ff00;
             z-index: 100;
             display: none;
-        }
-
-        /* Controls Help */
-        #controls-help {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 0.9rem;
-            color: #666;
-            text-align: center;
-            z-index: 100;
-        }
-
-        /* Spin Indicator */
-        #spin-indicator {
-            position: fixed;
-            bottom: 80px;
-            left: 30px;
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: rgba(0, 0, 0, 0.5);
-            border: 2px solid #444;
-            z-index: 100;
-            display: none;
-        }
-
-        #spin-arrow {
-            width: 100%;
-            height: 100%;
-            position: relative;
-        }
-
-        #spin-arrow::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 30px;
-            height: 4px;
-            background: #00f5ff;
-            transform-origin: left center;
-            transform: translate(0, -50%);
-            border-radius: 2px;
-        }
-
-        #spin-label {
-            position: absolute;
-            bottom: -25px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 0.8rem;
-            color: #888;
-            white-space: nowrap;
         }
 
         /* Responsive */
@@ -466,36 +465,32 @@
 </head>
 <body>
 
-    <canvas id="game-canvas"></canvas>
-
-    <!-- MENU -->
+    <!-- MENU EKRANI -->
     <div id="menu-screen">
         <div class="menu-container">
-            <h1 class="game-logo">🏓 3D PING PONG</h1>
-            <p class="game-subtitle">MASA TENİSİ</p>
+            <h1 class="game-logo">🏓 PING PONG</h1>
+            <p class="game-subtitle">ONLINE MULTIPLAYER</p>
             
             <div class="menu-buttons">
-                <button class="menu-btn btn-online" id="btn-online">
+                <button class="menu-btn btn-online" onclick="showLobby()">
                     🌐 Online Oyna
                 </button>
-                <button class="menu-btn btn-bot" id="btn-bot">
+                <button class="menu-btn btn-bot" onclick="startBotGame()">
                     🤖 Bota Karşı
                 </button>
-                <button class="menu-btn btn-practice" id="btn-practice">
+                <button class="menu-btn btn-practice" onclick="startPractice()">
                     🎯 Antrenman
                 </button>
             </div>
             
             <div style="color: #666; font-size: 0.9rem;">
-                <p>🖱️ Fare ile raketi kontrol et</p>
-                <p>⬆️⬇️ Hızlı hareket = Topspin/Backspin</p>
-                <p>⬅️➡️ Hızlı hareket = Sidespin</p>
-                <p>ESC - Pause</p>
+                <p>Fare ile raketinizi kontrol edin</p>
+                <p>ESC - Pause | M - Ses Açık/Kapalı</p>
             </div>
         </div>
     </div>
 
-    <!-- LOBBY -->
+    <!-- LOBBY EKRANI -->
     <div id="lobby-screen">
         <div class="lobby-container">
             <h2 class="lobby-title">🌐 Online Lobi</h2>
@@ -527,8 +522,10 @@
         </div>
     </div>
 
-    <!-- GAME UI -->
+    <!-- OYUN EKRANI -->
     <div id="game-screen">
+        <canvas id="game-canvas"></canvas>
+        
         <div id="score-board">
             <div class="player-score">
                 <div class="player-name" id="p1-name">SEN</div>
@@ -541,15 +538,24 @@
             </div>
         </div>
         
-        <div id="ping-display">PING: --ms</div>
-        
-        <div id="controls-help">
-            🖱️ Fare - Raket | ⬆️⬇️ Hız - Spin | ESC - Pause
+        <div id="settings-panel">
+            <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
         </div>
         
-        <div id="spin-indicator">
-            <div id="spin-arrow"></div>
-            <div id="spin-label">SPIN</div>
+        <div class="volume-control" id="volume-control">
+            <label style="display: block; margin-bottom: 10px; color: #888;">🔊 Ses</label>
+            <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="50" onchange="setVolume(this.value)">
+        </div>
+        
+        <div id="ping-display">PING: --ms</div>
+        
+        <div id="game-info">
+            <div class="info-item">
+                <span>🎮 FARE - Hareket</span>
+            </div>
+            <div class="info-item">
+                <span>⏸️ ESC - Pause</span>
+            </div>
         </div>
         
         <div id="countdown"></div>
@@ -564,7 +570,18 @@
         <button class="menu-btn btn-back" onclick="quitGame()">🚪 Oyundan Çık</button>
     </div>
 
-    <script src="https://unpkg.com/three@0.150.0/build/three.min.js"></script>
-    <script src="game-3d-fixed.js"></script>
+    <script>
+        // Socket.io yoksa boş bir mock oluştur
+        if (typeof io === 'undefined') {
+            window.io = function() {
+                return {
+                    connected: false,
+                    on: function() {},
+                    emit: function() {}
+                };
+            };
+        }
+    </script>
+    <script src="game-v2.js"></script>
 </body>
 </html>

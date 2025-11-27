@@ -3,24 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏓 Ping Pong Online</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>🏓 3D Ping Pong Pro</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
-            font-family: 'Rajdhani', sans-serif;
-            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0a0a1a 100%);
-            min-height: 100vh;
-            overflow: hidden;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: radial-gradient(ellipse at center, #1a1a3e 0%, #0a0a1a 100%);
             color: white;
+            overflow: hidden;
+            cursor: none;
         }
-
-        /* ==================== MENU EKRANI ==================== */
+        
+        #game-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        /* Custom Cursor */
+        #custom-cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #00f5ff;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1000;
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s, border-color 0.2s;
+            box-shadow: 0 0 10px #00f5ff, inset 0 0 5px rgba(0,245,255,0.3);
+        }
+        
+        #custom-cursor.hitting {
+            transform: translate(-50%, -50%) scale(1.5);
+            border-color: #ff00ff;
+            box-shadow: 0 0 20px #ff00ff;
+        }
+        
         #menu-screen {
             position: fixed;
             top: 0;
@@ -31,557 +54,888 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
-            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0a0a1a 100%);
+            z-index: 100;
+            background: rgba(10, 10, 26, 0.97);
+            backdrop-filter: blur(10px);
         }
-
-        .menu-container {
-            text-align: center;
-            animation: fadeInUp 0.8s ease;
-        }
-
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .game-logo {
-            font-family: 'Orbitron', sans-serif;
+        
+        #menu-screen.hidden { display: none; }
+        
+        .title {
             font-size: 4rem;
-            font-weight: 900;
-            background: linear-gradient(45deg, #00f5ff, #ff00ff, #00f5ff);
-            background-size: 200% 200%;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #00f5ff, #ff00ff, #00ff88);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            animation: gradientMove 3s ease infinite;
-            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(0,245,255,0.5);
+            animation: titleGlow 2s ease-in-out infinite alternate;
         }
-
-        @keyframes gradientMove {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
+        
+        @keyframes titleGlow {
+            from { filter: drop-shadow(0 0 20px #00f5ff); }
+            to { filter: drop-shadow(0 0 40px #ff00ff); }
         }
-
-        .game-subtitle {
+        
+        .subtitle {
             font-size: 1.2rem;
             color: #888;
-            margin-bottom: 50px;
-            letter-spacing: 5px;
-        }
-
-        .menu-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
             margin-bottom: 40px;
         }
-
+        
         .menu-btn {
-            padding: 18px 60px;
-            font-size: 1.2rem;
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 700;
+            display: block;
+            width: 280px;
+            padding: 18px 35px;
+            margin: 12px;
+            font-size: 1.3rem;
+            font-weight: bold;
             border: none;
-            border-radius: 50px;
+            border-radius: 40px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             text-transform: uppercase;
             letter-spacing: 2px;
         }
-
-        .menu-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transition: left 0.5s ease;
+        
+        .menu-btn:hover {
+            transform: scale(1.08) translateY(-3px);
         }
-
-        .menu-btn:hover::before {
-            left: 100%;
-        }
-
-        .btn-online {
-            background: linear-gradient(135deg, #00f5ff, #0088ff);
-            color: #000;
-            box-shadow: 0 0 30px rgba(0, 245, 255, 0.4);
-        }
-
-        .btn-online:hover {
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 0 50px rgba(0, 245, 255, 0.6);
-        }
-
+        
         .btn-bot {
             background: linear-gradient(135deg, #ff00ff, #ff0088);
-            color: #fff;
-            box-shadow: 0 0 30px rgba(255, 0, 255, 0.4);
+            color: white;
+            box-shadow: 0 5px 30px rgba(255, 0, 255, 0.5);
         }
-
+        
         .btn-bot:hover {
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 0 50px rgba(255, 0, 255, 0.6);
+            box-shadow: 0 10px 40px rgba(255, 0, 255, 0.7);
         }
-
+        
         .btn-practice {
             background: linear-gradient(135deg, #00ff88, #00cc66);
-            color: #000;
-            box-shadow: 0 0 30px rgba(0, 255, 136, 0.4);
+            color: black;
+            box-shadow: 0 5px 30px rgba(0, 255, 136, 0.5);
         }
-
+        
         .btn-practice:hover {
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 0 50px rgba(0, 255, 136, 0.6);
+            box-shadow: 0 10px 40px rgba(0, 255, 136, 0.7);
         }
-
-        /* ==================== LOBBY EKRANI ==================== */
-        #lobby-screen {
+        
+        .btn-online {
+            background: linear-gradient(135deg, #00f5ff, #0088ff);
+            color: black;
+            box-shadow: 0 5px 30px rgba(0, 245, 255, 0.5);
+        }
+        
+        .btn-online:hover {
+            box-shadow: 0 10px 40px rgba(0, 245, 255, 0.7);
+        }
+        
+        #game-ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 50;
+            display: none;
+            pointer-events: none;
+        }
+        
+        #game-ui.active { display: block; }
+        
+        #score-board {
+            display: flex;
+            justify-content: center;
+            gap: 80px;
+            padding: 25px;
+            font-size: 1.8rem;
+        }
+        
+        .score { 
+            text-align: center;
+            padding: 15px 30px;
+            border-radius: 15px;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(5px);
+        }
+        
+        .score-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            opacity: 0.8;
+        }
+        
+        .score-value {
+            font-size: 3.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 20px currentColor;
+        }
+        
+        .p1 { color: #00f5ff; border: 2px solid rgba(0,245,255,0.3); }
+        .p2 { color: #ff00ff; border: 2px solid rgba(255,0,255,0.3); }
+        
+        /* Spin Indicator */
+        #spin-indicator {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.2);
+            z-index: 60;
+            display: none;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+        
+        #spin-indicator.active { display: block; }
+        
+        #spin-arrow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 6px;
+            background: linear-gradient(90deg, #00f5ff, #ff00ff);
+            transform-origin: left center;
+            border-radius: 3px;
+            box-shadow: 0 0 15px #00f5ff;
+        }
+        
+        #spin-label {
+            position: absolute;
+            bottom: -25px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #888;
+        }
+        
+        /* Power Meter */
+        #power-meter {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 30px;
+            height: 150px;
+            border-radius: 15px;
+            border: 3px solid rgba(255,255,255,0.2);
+            z-index: 60;
+            display: none;
+            background: rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+        
+        #power-meter.active { display: block; }
+        
+        #power-fill {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(to top, #00ff88, #ffff00, #ff0000);
+            transition: height 0.1s;
+            box-shadow: 0 0 15px #00ff88;
+        }
+        
+        #power-label {
+            position: absolute;
+            bottom: -25px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #888;
+        }
+        
+        /* Combo Counter */
+        #combo {
+            position: fixed;
+            top: 50%;
+            right: 50px;
+            transform: translateY(-50%);
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ffff00;
+            text-shadow: 0 0 20px #ffff00;
+            z-index: 60;
+            display: none;
+            animation: comboPulse 0.3s ease-out;
+        }
+        
+        @keyframes comboPulse {
+            0% { transform: translateY(-50%) scale(1.5); }
+            100% { transform: translateY(-50%) scale(1); }
+        }
+        
+        #message {
+            position: fixed;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.5rem;
+            text-align: center;
+            z-index: 60;
+            display: none;
+            text-shadow: 0 0 30px rgba(0,245,255,0.9);
+            animation: msgAppear 0.3s ease-out;
+        }
+        
+        @keyframes msgAppear {
+            from { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        
+        #pause-screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
+            background: rgba(0,0,0,0.9);
             display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
-            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0a0a1a 100%);
-        }
-
-        .lobby-container {
-            background: rgba(255, 255, 255, 0.05);
+            z-index: 200;
             backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            text-align: center;
-            min-width: 400px;
         }
-
-        .lobby-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 2rem;
-            margin-bottom: 30px;
-            color: #00f5ff;
-        }
-
-        .room-section {
-            margin-bottom: 30px;
-        }
-
-        .room-section h3 {
-            font-size: 1.1rem;
-            color: #888;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .room-code-display {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 2.5rem;
-            font-weight: 900;
-            background: linear-gradient(45deg, #00f5ff, #ff00ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: 8px;
-            margin: 20px 0;
-            padding: 15px 30px;
-            border: 2px solid rgba(0, 245, 255, 0.3);
-            border-radius: 10px;
-            display: inline-block;
-        }
-
-        .room-input {
-            padding: 15px 25px;
-            font-size: 1.5rem;
-            font-family: 'Orbitron', sans-serif;
-            text-align: center;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            background: rgba(0, 0, 0, 0.3);
-            color: white;
-            width: 200px;
-            letter-spacing: 5px;
-            text-transform: uppercase;
-        }
-
-        .room-input:focus {
-            outline: none;
-            border-color: #00f5ff;
-            box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
-        }
-
-        .lobby-btn {
-            padding: 15px 40px;
-            font-size: 1rem;
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 700;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            margin: 10px;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .btn-create {
-            background: linear-gradient(135deg, #00f5ff, #0088ff);
-            color: #000;
-        }
-
-        .btn-join {
-            background: linear-gradient(135deg, #ff00ff, #ff0088);
-            color: #fff;
-        }
-
-        .btn-back {
-            background: rgba(255, 255, 255, 0.1);
-            color: #888;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .waiting-text {
-            font-size: 1.2rem;
-            color: #00f5ff;
-            margin-top: 20px;
-            animation: pulse 1.5s ease infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .copy-btn {
-            background: rgba(0, 245, 255, 0.2);
-            border: 1px solid #00f5ff;
-            color: #00f5ff;
-            padding: 8px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            margin-top: 10px;
-            transition: all 0.3s ease;
-        }
-
-        .copy-btn:hover {
-            background: #00f5ff;
-            color: #000;
-        }
-
-        /* ==================== OYUN EKRANI ==================== */
-        #game-screen {
-            display: none;
-            width: 100%;
-            height: 100vh;
-        }
-
-        #game-canvas {
-            display: block;
-        }
-
-        /* Skor Tablosu */
-        #score-board {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            gap: 40px;
-            font-family: 'Orbitron', sans-serif;
-            z-index: 100;
-        }
-
-        .player-score {
-            text-align: center;
-        }
-
-        .player-name {
-            font-size: 0.9rem;
-            color: #888;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 5px;
-        }
-
-        .score-value {
-            font-size: 3rem;
-            font-weight: 900;
-        }
-
-        .score-p1 { color: #00f5ff; text-shadow: 0 0 20px rgba(0, 245, 255, 0.5); }
-        .score-p2 { color: #ff00ff; text-shadow: 0 0 20px rgba(255, 0, 255, 0.5); }
-
-        .score-divider {
-            font-size: 2rem;
-            color: #444;
-        }
-
-        /* Oyun Bilgileri */
-        #game-info {
+        
+        /* Tutorial */
+        #tutorial {
             position: fixed;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            display: flex;
-            gap: 30px;
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 0.9rem;
-            color: #666;
-            z-index: 100;
-        }
-
-        /* Mesaj Overlay */
-        #message-overlay {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 2rem;
-            font-weight: 900;
-            text-align: center;
-            z-index: 200;
-            display: none;
-        }
-
-        /* Pause Menü */
-        #pause-menu {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 500;
-        }
-
-        .pause-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 3rem;
-            font-weight: 900;
-            color: #00f5ff;
-            margin-bottom: 40px;
-        }
-
-        /* Settings Panel */
-        #settings-panel {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 100;
-        }
-
-        .settings-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .settings-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: rotate(90deg);
-        }
-
-        /* Volume Slider */
-        .volume-control {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 15px 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 15px 30px;
             border-radius: 10px;
+            font-size: 0.9rem;
+            color: #aaa;
+            z-index: 55;
             display: none;
-            z-index: 100;
+            text-align: center;
+            backdrop-filter: blur(5px);
         }
-
-        .volume-control.active {
-            display: block;
+        
+        #tutorial.active { display: block; }
+        
+        .key {
+            display: inline-block;
+            background: rgba(255,255,255,0.1);
+            padding: 3px 10px;
+            border-radius: 5px;
+            margin: 0 3px;
+            border: 1px solid rgba(255,255,255,0.2);
         }
-
-        .volume-slider {
-            width: 120px;
-            accent-color: #00f5ff;
+        
+        .info {
+            margin-top: 40px;
+            color: #666;
+            text-align: center;
+            line-height: 2;
+            font-size: 0.95rem;
         }
-
-        /* Countdown */
-        #countdown {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 8rem;
-            font-weight: 900;
+        
+        .info strong {
             color: #00f5ff;
-            text-shadow: 0 0 50px rgba(0, 245, 255, 0.8);
-            z-index: 300;
-            display: none;
         }
-
-        /* Ping Göstergesi */
-        #ping-display {
+        
+        /* Hit Effect */
+        .hit-effect {
             position: fixed;
-            top: 20px;
-            left: 20px;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.8rem;
-            color: #00ff00;
-            z-index: 100;
-            display: none;
+            pointer-events: none;
+            z-index: 500;
+            animation: hitExpand 0.4s ease-out forwards;
         }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .game-logo { font-size: 2.5rem; }
-            .menu-btn { padding: 15px 40px; font-size: 1rem; }
-            .lobby-container { min-width: 90%; padding: 30px 20px; }
-            .room-code-display { font-size: 1.8rem; }
-            #score-board { gap: 20px; }
-            .score-value { font-size: 2rem; }
+        
+        @keyframes hitExpand {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
         }
     </style>
 </head>
 <body>
-
-    <!-- MENU EKRANI -->
+    <canvas id="game-canvas"></canvas>
+    <div id="custom-cursor"></div>
+    
     <div id="menu-screen">
-        <div class="menu-container">
-            <h1 class="game-logo">🏓 PING PONG</h1>
-            <p class="game-subtitle">ONLINE MULTIPLAYER</p>
-            
-            <div class="menu-buttons">
-                <button class="menu-btn btn-online" onclick="showLobby()">
-                    🌐 Online Oyna
-                </button>
-                <button class="menu-btn btn-bot" onclick="startBotGame()">
-                    🤖 Bota Karşı
-                </button>
-                <button class="menu-btn btn-practice" onclick="startPractice()">
-                    🎯 Antrenman
-                </button>
-            </div>
-            
-            <div style="color: #666; font-size: 0.9rem;">
-                <p>Fare ile raketinizi kontrol edin</p>
-                <p>ESC - Pause | M - Ses Açık/Kapalı</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- LOBBY EKRANI -->
-    <div id="lobby-screen">
-        <div class="lobby-container">
-            <h2 class="lobby-title">🌐 Online Lobi</h2>
-            
-            <div id="create-room-section" class="room-section">
-                <h3>Yeni Oda Oluştur</h3>
-                <button class="lobby-btn btn-create" onclick="createRoom()">Oda Oluştur</button>
-            </div>
-            
-            <div id="room-created-section" class="room-section" style="display: none;">
-                <h3>Oda Kodunuz</h3>
-                <div class="room-code-display" id="room-code">XXXX</div>
-                <br>
-                <button class="copy-btn" onclick="copyRoomCode()">📋 Kodu Kopyala</button>
-                <p class="waiting-text" id="waiting-text">Rakip bekleniyor...</p>
-            </div>
-            
-            <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 30px 0;">
-            
-            <div class="room-section">
-                <h3>Odaya Katıl</h3>
-                <input type="text" class="room-input" id="join-room-input" placeholder="XXXX" maxlength="4">
-                <br><br>
-                <button class="lobby-btn btn-join" onclick="joinRoom()">Odaya Katıl</button>
-            </div>
-            
-            <br>
-            <button class="lobby-btn btn-back" onclick="backToMenu()">← Geri</button>
-        </div>
-    </div>
-
-    <!-- OYUN EKRANI -->
-    <div id="game-screen">
-        <canvas id="game-canvas"></canvas>
+        <h1 class="title">🏓 PING PONG PRO</h1>
+        <p class="subtitle">3D Masa Tenisi Simülasyonu</p>
         
+        <button class="menu-btn btn-bot" id="btn-bot">🤖 Bota Karşı</button>
+        <button class="menu-btn btn-practice" id="btn-practice">🎯 Antrenman</button>
+        <button class="menu-btn btn-online" id="btn-online">🌐 2 Kişilik</button>
+        
+        <div class="info">
+            <strong>🖱️ Fare Hareketi</strong> = Raket Kontrolü<br>
+            <strong>⬅️ Sola Çekerek Vur</strong> = Sağa Falso<br>
+            <strong>➡️ Sağa Çekerek Vur</strong> = Sola Falso<br>
+            <strong>⬆️⬇️ Yukarı/Aşağı</strong> = Topspin/Backspin<br>
+            <span class="key">SPACE</span> veya <span class="key">TIKLA</span> = Servis
+        </div>
+    </div>
+    
+    <div id="game-ui">
         <div id="score-board">
-            <div class="player-score">
-                <div class="player-name" id="p1-name">SEN</div>
-                <div class="score-value score-p1" id="score-p1">0</div>
+            <div class="score p1">
+                <div class="score-label">Sen</div>
+                <div class="score-value" id="score-p1">0</div>
             </div>
-            <div class="score-divider">:</div>
-            <div class="player-score">
-                <div class="player-name" id="p2-name">RAKİP</div>
-                <div class="score-value score-p2" id="score-p2">0</div>
-            </div>
-        </div>
-        
-        <div id="settings-panel">
-            <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
-        </div>
-        
-        <div class="volume-control" id="volume-control">
-            <label style="display: block; margin-bottom: 10px; color: #888;">🔊 Ses</label>
-            <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="50" onchange="setVolume(this.value)">
-        </div>
-        
-        <div id="ping-display">PING: --ms</div>
-        
-        <div id="game-info">
-            <div class="info-item">
-                <span>🎮 FARE - Hareket</span>
-            </div>
-            <div class="info-item">
-                <span>⏸️ ESC - Pause</span>
+            <div class="score p2">
+                <div class="score-label">Rakip</div>
+                <div class="score-value" id="score-p2">0</div>
             </div>
         </div>
-        
-        <div id="countdown"></div>
-        <div id="message-overlay"></div>
+    </div>
+    
+    <div id="spin-indicator">
+        <div id="spin-arrow"></div>
+        <div id="spin-label">SPIN</div>
+    </div>
+    
+    <div id="power-meter">
+        <div id="power-fill"></div>
+        <div id="power-label">GÜÇ</div>
+    </div>
+    
+    <div id="combo"></div>
+    <div id="message"></div>
+    
+    <div id="tutorial">
+        <span class="key">SPACE</span> ile topu at, sonra <strong>raketinle vur!</strong>
+    </div>
+    
+    <div id="pause-screen">
+        <h2 style="font-size: 3rem; margin-bottom: 40px;">⏸️ DURAKLATILDI</h2>
+        <button class="menu-btn btn-bot" id="btn-resume">▶️ Devam Et</button>
+        <button class="menu-btn btn-practice" id="btn-quit">🏠 Ana Menü</button>
     </div>
 
-    <!-- PAUSE MENU -->
-    <div id="pause-menu">
-        <h2 class="pause-title">⏸️ DURAKLATILDI</h2>
-        <button class="menu-btn btn-online" onclick="resumeGame()">▶️ Devam Et</button>
-        <br><br>
-        <button class="menu-btn btn-back" onclick="quitGame()">🚪 Oyundan Çık</button>
-    </div>
-
+    <script src="https://unpkg.com/three@0.150.0/build/three.min.js"></script>
     <script>
-        // Socket.io yoksa boş bir mock oluştur
-        if (typeof io === 'undefined') {
-            window.io = function() {
-                return {
-                    connected: false,
-                    on: function() {},
-                    emit: function() {}
-                };
-            };
+// ==================== 3D PING PONG ====================
+
+let scene, camera, renderer;
+let table, net, ball, paddle, opponentPaddle;
+let gameState = 'menu';
+let gameMode = 'bot';
+
+const TABLE = { length: 3.5, width: 2, height: 0.76, netHeight: 0.15 };
+const PHYSICS = { gravity: -8, ballRadius: 0.025, paddleRadius: 0.095, bounce: 0.85 };
+
+let ballPos = { x: 0, y: TABLE.height + 0.2, z: 0.8 };
+let ballVel = { x: 0, y: 0, z: 0 };
+let ballSpin = { x: 0, z: 0 };
+
+let paddlePos = { x: 0, y: TABLE.height + 0.12, z: TABLE.length/2 + 0.15 };
+let paddlePrev = { x: 0, y: TABLE.height + 0.12, z: TABLE.length/2 + 0.15 };
+let paddleVel = { x: 0, y: 0, z: 0 };
+let paddleAngle = 0; // Raket eğim açısı
+
+let oppPos = { x: 0, y: TABLE.height + 0.12, z: -TABLE.length/2 - 0.15 };
+
+let mouse = { x: 0, y: 0 };
+let scores = { player: 0, opponent: 0 };
+let servingPlayer = 'player';
+let servePhase = 0;
+let audioCtx = null;
+
+// ===== INIT =====
+function init() {
+    console.log('Init started');
+    
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1a2e);
+    
+    camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100);
+    camera.position.set(0, TABLE.height + 1.5, TABLE.length/2 + 2.5);
+    camera.lookAt(0, TABLE.height, -TABLE.length/4);
+    
+    renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    
+    // Lights
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const light = new THREE.DirectionalLight(0xffffff, 0.8);
+    light.position.set(3, 8, 5);
+    light.castShadow = true;
+    scene.add(light);
+    
+    createTable();
+    createNet();
+    createBall();
+    createPaddles();
+    createFloor();
+    
+    setupEvents();
+    animate();
+    
+    console.log('Init complete');
+}
+
+function createTable() {
+    const geo = new THREE.BoxGeometry(TABLE.width, 0.03, TABLE.length);
+    const mat = new THREE.MeshStandardMaterial({ color: 0x0d6b32 });
+    table = new THREE.Mesh(geo, mat);
+    table.position.set(0, TABLE.height, 0);
+    table.receiveShadow = true;
+    scene.add(table);
+    
+    // Lines
+    const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const centerLine = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.005, TABLE.length), lineMat);
+    centerLine.position.set(0, TABLE.height + 0.02, 0);
+    scene.add(centerLine);
+}
+
+function createNet() {
+    // Posts
+    const postGeo = new THREE.CylinderGeometry(0.01, 0.01, TABLE.netHeight);
+    const postMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
+    [-1, 1].forEach(side => {
+        const post = new THREE.Mesh(postGeo, postMat);
+        post.position.set(side * (TABLE.width/2 + 0.02), TABLE.height + TABLE.netHeight/2, 0);
+        scene.add(post);
+    });
+    
+    // Net
+    const netGeo = new THREE.BoxGeometry(TABLE.width + 0.04, TABLE.netHeight, 0.01);
+    const netMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+    net = new THREE.Mesh(netGeo, netMat);
+    net.position.set(0, TABLE.height + TABLE.netHeight/2 + 0.015, 0);
+    scene.add(net);
+}
+
+function createBall() {
+    const geo = new THREE.SphereGeometry(PHYSICS.ballRadius, 32, 32);
+    const mat = new THREE.MeshStandardMaterial({ color: 0xff6600, emissive: 0xff3300, emissiveIntensity: 0.3 });
+    ball = new THREE.Mesh(geo, mat);
+    ball.castShadow = true;
+    scene.add(ball);
+}
+
+function createPaddles() {
+    const geo = new THREE.CylinderGeometry(PHYSICS.paddleRadius, PHYSICS.paddleRadius, 0.01, 32);
+    
+    // Player paddle
+    const pMat = new THREE.MeshStandardMaterial({ color: 0xcc0000 });
+    paddle = new THREE.Mesh(geo, pMat);
+    paddle.castShadow = true;
+    scene.add(paddle);
+    
+    // Player handle - pointing toward player (positive Z)
+    const handleGeo = new THREE.CylinderGeometry(0.012, 0.018, 0.12, 16);
+    const handleMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21 });
+    const handle = new THREE.Mesh(handleGeo, handleMat);
+    handle.position.set(0, 0, PHYSICS.paddleRadius + 0.05);
+    paddle.add(handle);
+    
+    // Opponent paddle
+    const oMat = new THREE.MeshStandardMaterial({ color: 0x0066cc });
+    opponentPaddle = new THREE.Mesh(geo.clone(), oMat);
+    opponentPaddle.castShadow = true;
+    scene.add(opponentPaddle);
+    
+    // Opponent handle - pointing down (negative Y direction from paddle)
+    const oppHandle = new THREE.Mesh(handleGeo.clone(), handleMat);
+    oppHandle.position.set(0, 0, -(PHYSICS.paddleRadius + 0.05));
+    opponentPaddle.add(oppHandle);
+}
+
+function createFloor() {
+    const geo = new THREE.PlaneGeometry(20, 20);
+    const mat = new THREE.MeshStandardMaterial({ color: 0x2a2a4a });
+    const floor = new THREE.Mesh(geo, mat);
+    floor.rotation.x = -Math.PI/2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+}
+
+// ===== EVENTS =====
+function setupEvents() {
+    document.addEventListener('mousemove', (e) => {
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    });
+    
+    document.addEventListener('click', () => {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (gameState === 'serving' && servingPlayer === 'player' && servePhase === 0) {
+            tossBall();
         }
+    });
+    
+    document.addEventListener('keydown', (e) => {
+        if (e.key === ' ' && gameState === 'serving' && servingPlayer === 'player' && servePhase === 0) {
+            tossBall();
+        }
+        if (e.key === 'Escape') togglePause();
+    });
+    
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+}
+
+// ===== GAME =====
+function startGame() {
+    console.log('Starting game');
+    document.getElementById('menu-screen').classList.add('hidden');
+    document.getElementById('game-ui').classList.add('active');
+    
+    scores = { player: 0, opponent: 0 };
+    updateScore();
+    servingPlayer = 'player';
+    prepareServe();
+}
+
+function prepareServe() {
+    gameState = 'serving';
+    servePhase = 0;
+    
+    if (servingPlayer === 'player') {
+        // Ball starts in front of paddle, ready to toss
+        ballPos = { 
+            x: paddlePos.x, 
+            y: paddlePos.y + 0.08, 
+            z: paddlePos.z - 0.15 
+        };
+        ballVel = { x: 0, y: 0, z: 0 };
+        showMsg('🏓 SPACE veya TIKLA = Topu at!', 3000);
+    } else {
+        ballPos = { x: oppPos.x, y: TABLE.height + 0.15, z: -TABLE.length/2 + 0.2 };
+        ballVel = { x: 0, y: 0, z: 0 };
+        showMsg('🤖 Rakip servis...', 1000);
+        setTimeout(() => { if (gameState === 'serving') opponentServe(); }, 1200);
+    }
+}
+
+function tossBall() {
+    servePhase = 1;
+    // Toss ball up and slightly forward
+    ballVel = { x: 0, y: 4, z: -0.5 };
+    playSound(400);
+    showMsg('🎯 Raketi topa götür!', 2000);
+}
+
+function playerServe() {
+    servePhase = 2;
+    gameState = 'playing';
+    playSound(800);
+    
+    // Ball goes toward opponent with spin based on paddle movement
+    const power = Math.min(5 + Math.abs(paddleVel.z) * 0.3, 8);
+    ballVel = {
+        x: paddleVel.x * 0.3 + (Math.random() - 0.5) * 0.5,
+        y: 1.5,
+        z: -power
+    };
+    ballSpin = { x: paddleVel.y * 0.3, z: paddleVel.x * 0.3 };
+}
+
+function opponentServe() {
+    servePhase = 2;
+    gameState = 'playing';
+    playSound(800);
+    
+    ballVel = { x: (Math.random()-0.5)*2, y: -2, z: 3 };
+    ballSpin = { x: (Math.random()-0.5)*3, z: (Math.random()-0.5)*3 };
+}
+
+function update(dt) {
+    if (!dt || dt > 0.1) dt = 0.016;
+    
+    // Paddle - store previous
+    paddlePrev.x = paddlePos.x;
+    paddlePrev.y = paddlePos.y;
+    paddlePrev.z = paddlePos.z;
+    
+    // X: left-right from mouse X - MORE RESPONSIVE
+    const targetX = mouse.x * (TABLE.width/2 + 0.2);
+    
+    // Z: depth from mouse Y
+    const minZ = TABLE.length/2 - 0.5;
+    const maxZ = TABLE.length/2 + 0.35;
+    const targetZ = maxZ - (mouse.y + 1) * 0.5 * (maxZ - minZ);
+    
+    // Y: height
+    const targetY = TABLE.height + 0.1 + (1 - (mouse.y + 1) * 0.25) * 0.12;
+    
+    // SHARP movement - direct follow (0.4 = very responsive)
+    paddlePos.x += (targetX - paddlePos.x) * 0.4;
+    paddlePos.y += (targetY - paddlePos.y) * 0.4;
+    paddlePos.z += (targetZ - paddlePos.z) * 0.4;
+    
+    // Clamp
+    paddlePos.x = Math.max(-TABLE.width/2 - 0.2, Math.min(TABLE.width/2 + 0.2, paddlePos.x));
+    paddlePos.y = Math.max(TABLE.height + 0.05, Math.min(TABLE.height + 0.3, paddlePos.y));
+    paddlePos.z = Math.max(minZ, Math.min(maxZ, paddlePos.z));
+    
+    // Calculate velocity
+    paddleVel.x = (paddlePos.x - paddlePrev.x) / dt;
+    paddleVel.y = (paddlePos.y - paddlePrev.y) / dt;
+    paddleVel.z = (paddlePos.z - paddlePrev.z) / dt;
+    
+    // PADDLE ANGLE based on mouse X position
+    // Mouse right = paddle tilts right (handle goes left)
+    // Mouse left = paddle tilts left (handle goes right)
+    const targetAngle = -mouse.x * 0.4; // Max ~23 degrees tilt
+    paddleAngle += (targetAngle - paddleAngle) * 0.3;
+    
+    // Opponent AI
+    if (gameState === 'playing' && ballVel.z < 0) {
+        const t = Math.abs((oppPos.z - ballPos.z) / ballVel.z);
+        const targetX = ballPos.x + ballVel.x * t * 0.7;
+        oppPos.x += (targetX - oppPos.x) * 0.05;
+        oppPos.x = Math.max(-TABLE.width/2, Math.min(TABLE.width/2, oppPos.x));
+    }
+    
+    // Ball physics during gameplay
+    if (gameState === 'playing') {
+        updateBall(dt);
+    }
+    
+    // Ball physics during serve
+    if (gameState === 'serving' && servingPlayer === 'player') {
+        if (servePhase === 0) {
+            // Ball follows paddle position
+            ballPos.x = paddlePos.x;
+            ballPos.y = paddlePos.y + 0.08;
+            ballPos.z = paddlePos.z - 0.12;
+        } else if (servePhase === 1) {
+            // Ball tossed - apply gravity
+            ballVel.y += PHYSICS.gravity * dt;
+            ballPos.x += ballVel.x * dt;
+            ballPos.y += ballVel.y * dt;
+            ballPos.z += ballVel.z * dt;
+            
+            // Check if paddle hits tossed ball - LARGER hit area for easier serve
+            const dist = Math.sqrt(
+                (ballPos.x - paddlePos.x)**2 +
+                (ballPos.y - paddlePos.y)**2 +
+                (ballPos.z - paddlePos.z)**2
+            );
+            
+            // Easier to hit - larger detection radius
+            if (dist < PHYSICS.paddleRadius + PHYSICS.ballRadius + 0.08) {
+                playerServe();
+            }
+            
+            // Ball fell too low - reset serve
+            if (ballPos.y < TABLE.height - 0.1) {
+                showMsg('❌ Kaçırdın! Tekrar dene.', 1500);
+                setTimeout(prepareServe, 1000);
+            }
+        }
+    }
+    
+    // Update meshes
+    paddle.position.set(paddlePos.x, paddlePos.y, paddlePos.z);
+    // Paddle rotation: base rotation + tilt based on mouse position
+    paddle.rotation.set(Math.PI/2, 0, paddleAngle);
+    
+    opponentPaddle.position.set(oppPos.x, oppPos.y, oppPos.z);
+    opponentPaddle.rotation.set(Math.PI/2, 0, 0);
+    
+    ball.position.set(ballPos.x, ballPos.y, ballPos.z);
+    ball.rotation.x += ballSpin.x * dt * 2;
+    ball.rotation.z += ballSpin.z * dt * 2;
+}
+
+function updateBall(dt) {
+    ballVel.y += PHYSICS.gravity * dt;
+    ballVel.x *= 0.999;
+    ballVel.z *= 0.999;
+    
+    // Spin effect on ball trajectory (Magnus effect)
+    ballVel.x += ballSpin.z * 0.2 * dt;
+    ballVel.z -= ballSpin.x * 0.2 * dt;
+    ballSpin.x *= 0.998;
+    ballSpin.z *= 0.998;
+    
+    ballPos.x += ballVel.x * dt;
+    ballPos.y += ballVel.y * dt;
+    ballPos.z += ballVel.z * dt;
+    
+    // Table bounce
+    if (ballPos.y <= TABLE.height + PHYSICS.ballRadius && ballVel.y < 0) {
+        if (Math.abs(ballPos.x) <= TABLE.width/2 && Math.abs(ballPos.z) <= TABLE.length/2) {
+            ballPos.y = TABLE.height + PHYSICS.ballRadius;
+            ballVel.y = -ballVel.y * PHYSICS.bounce;
+            // Spin affects bounce direction
+            ballVel.x += ballSpin.z * 0.08;
+            ballVel.z -= ballSpin.x * 0.08;
+            playSound(500);
+        }
+    }
+    
+    // Net
+    if (Math.abs(ballPos.z) < 0.04 && ballPos.y < TABLE.height + TABLE.netHeight + PHYSICS.ballRadius && ballPos.y > TABLE.height) {
+        ballVel.z *= -0.3;
+        ballPos.z = Math.sign(ballPos.z) * 0.05;
+        playSound(200);
+    }
+    
+    // Player paddle collision
+    const pDist = Math.sqrt((ballPos.x-paddlePos.x)**2 + (ballPos.y-paddlePos.y)**2 + (ballPos.z-paddlePos.z)**2);
+    if (pDist < PHYSICS.paddleRadius + PHYSICS.ballRadius + 0.02 && ballVel.z > 0) {
+        playSound(800);
+        
+        // Hit position on paddle
+        const hitX = (ballPos.x - paddlePos.x) / PHYSICS.paddleRadius;
+        
+        // Base power - SLOWER for more control
+        const basePower = 3.5;
+        const extraPower = Math.min(Math.abs(paddleVel.z) * 0.15, 2);
+        
+        // Direction based on hit position and paddle angle
+        ballVel.x = hitX * 2 + paddleVel.x * 0.25;
+        ballVel.y = 2;
+        ballVel.z = -(basePower + extraPower);
+        
+        // SPIN based on paddle movement direction
+        // Moving right while hitting = ball spins and curves LEFT
+        // Moving left while hitting = ball spins and curves RIGHT
+        ballSpin.x = paddleVel.y * 0.15;  // Topspin/backspin from vertical movement
+        ballSpin.z = -paddleVel.x * 0.25; // Sidespin - REVERSED for realistic curve
+        
+        // Add spin from paddle angle
+        ballSpin.z += paddleAngle * 2;
+    }
+    
+    // Opponent paddle collision
+    const oDist = Math.sqrt((ballPos.x-oppPos.x)**2 + (ballPos.y-oppPos.y)**2 + (ballPos.z-oppPos.z)**2);
+    if (oDist < PHYSICS.paddleRadius + PHYSICS.ballRadius + 0.02 && ballVel.z < 0) {
+        playSound(800);
+        
+        // Opponent aims toward player's reachable area - SLOWER
+        const targetX = (Math.random()-0.5) * TABLE.width * 0.5;
+        ballVel.x = (targetX - ballPos.x) * 0.5;
+        ballVel.y = 2;
+        ballVel.z = 3 + Math.random() * 1.5; // Slower returns
+        
+        // Random spin
+        ballSpin.x = (Math.random()-0.5) * 2;
+        ballSpin.z = (Math.random()-0.5) * 2;
+    }
+    
+    // Out of bounds
+    if (ballPos.z > TABLE.length/2 + 1) { score('opponent'); return; }
+    if (ballPos.z < -TABLE.length/2 - 1) { score('player'); return; }
+    if (ballPos.y < TABLE.height - 0.5) {
+        score(ballPos.z > 0 ? 'opponent' : 'player');
+    }
+}
+
+function score(who) {
+    if (gameState !== 'playing') return;
+    gameState = 'scoring';
+    
+    scores[who]++;
+    updateScore();
+    playSound(who === 'player' ? 700 : 250);
+    showMsg(who === 'player' ? '✅ SAYIN!' : '❌ Rakip Sayı!', 1500);
+    
+    if ((scores.player >= 11 || scores.opponent >= 11) && Math.abs(scores.player - scores.opponent) >= 2) {
+        endGame();
+        return;
+    }
+    
+    servingPlayer = servingPlayer === 'player' ? 'opponent' : 'player';
+    setTimeout(() => { if (gameState !== 'menu') prepareServe(); }, 2000);
+}
+
+function endGame() {
+    gameState = 'ended';
+    const won = scores.player > scores.opponent;
+    showMsg(won ? '🎉 KAZANDIN!' : '😢 KAYBETTİN', 0);
+    playSound(won ? 880 : 220);
+    
+    setTimeout(() => {
+        document.getElementById('message').innerHTML += '<br><br><button class="menu-btn btn-bot" onclick="location.reload()">🔄 Tekrar</button>';
+    }, 500);
+}
+
+function togglePause() {
+    if (gameState === 'playing') {
+        gameState = 'paused';
+        document.getElementById('pause-screen').style.display = 'flex';
+    } else if (gameState === 'paused') {
+        gameState = 'playing';
+        document.getElementById('pause-screen').style.display = 'none';
+    }
+}
+
+function updateScore() {
+    document.getElementById('score-p1').textContent = scores.player;
+    document.getElementById('score-p2').textContent = scores.opponent;
+}
+
+function showMsg(text, duration) {
+    const el = document.getElementById('message');
+    el.innerHTML = text;
+    el.style.display = 'block';
+    if (duration) setTimeout(() => { if (gameState !== 'ended') el.style.display = 'none'; }, duration);
+}
+
+function playSound(freq) {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.frequency.value = freq;
+    gain.gain.value = 0.2;
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.15);
+}
+
+// ===== ANIMATION =====
+let lastTime = 0;
+function animate(time) {
+    requestAnimationFrame(animate);
+    const dt = Math.min((time - lastTime) / 1000, 0.05) || 0.016;
+    lastTime = time;
+    update(dt);
+    if (renderer) renderer.render(scene, camera);
+}
+
+// ===== BUTTON HANDLERS =====
+document.getElementById('btn-bot').addEventListener('click', () => {
+    console.log('Bot button clicked');
+    gameMode = 'bot';
+    startGame();
+});
+
+document.getElementById('btn-practice').addEventListener('click', () => {
+    console.log('Practice button clicked');
+    gameMode = 'practice';
+    startGame();
+});
+
+document.getElementById('btn-online').addEventListener('click', () => {
+    console.log('Online button clicked');
+    alert('Online mod yakında!');
+});
+
+document.getElementById('btn-resume').addEventListener('click', () => {
+    gameState = 'playing';
+    document.getElementById('pause-screen').style.display = 'none';
+});
+
+document.getElementById('btn-quit').addEventListener('click', () => {
+    location.reload();
+});
+
+// ===== START =====
+console.log('Script loaded');
+init();
     </script>
-    <script src="game-v2.js"></script>
 </body>
 </html>
