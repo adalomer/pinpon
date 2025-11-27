@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏓 Ping Pong Online</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0a0a1a 100%);
+            min-height: 100vh;
+            overflow: hidden;
+            color: white;
+        }
+
+        /* ==================== MENU EKRANI ==================== */
+        #menu-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0a0a1a 100%);
+        }
+
+        .menu-container {
+            text-align: center;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .game-logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, #00f5ff, #ff00ff, #00f5ff);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientMove 3s ease infinite;
+            margin-bottom: 10px;
+        }
+
+        @keyframes gradientMove {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .game-subtitle {
+            font-size: 1.2rem;
+            color: #888;
+            margin-bottom: 50px;
+            letter-spacing: 5px;
+        }
+
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .menu-btn {
+            padding: 18px 60px;
+            font-size: 1.2rem;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .menu-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .menu-btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-online {
+            background: linear-gradient(135deg, #00f5ff, #0088ff);
+            color: #000;
+            box-shadow: 0 0 30px rgba(0, 245, 255, 0.4);
+        }
+
+        .btn-online:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 0 50px rgba(0, 245, 255, 0.6);
+        }
+
+        .btn-bot {
+            background: linear-gradient(135deg, #ff00ff, #ff0088);
+            color: #fff;
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.4);
+        }
+
+        .btn-bot:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 0 50px rgba(255, 0, 255, 0.6);
+        }
+
+        .btn-practice {
+            background: linear-gradient(135deg, #00ff88, #00cc66);
+            color: #000;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.4);
+        }
+
+        .btn-practice:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 0 50px rgba(0, 255, 136, 0.6);
+        }
+
+        /* ==================== LOBBY EKRANI ==================== */
+        #lobby-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0a0a1a 100%);
+        }
+
+        .lobby-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            min-width: 400px;
+        }
+
+        .lobby-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            margin-bottom: 30px;
+            color: #00f5ff;
+        }
+
+        .room-section {
+            margin-bottom: 30px;
+        }
+
+        .room-section h3 {
+            font-size: 1.1rem;
+            color: #888;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .room-code-display {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, #00f5ff, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 8px;
+            margin: 20px 0;
+            padding: 15px 30px;
+            border: 2px solid rgba(0, 245, 255, 0.3);
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        .room-input {
+            padding: 15px 25px;
+            font-size: 1.5rem;
+            font-family: 'Orbitron', sans-serif;
+            text-align: center;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            width: 200px;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+        }
+
+        .room-input:focus {
+            outline: none;
+            border-color: #00f5ff;
+            box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
+        }
+
+        .lobby-btn {
+            padding: 15px 40px;
+            font-size: 1rem;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .btn-create {
+            background: linear-gradient(135deg, #00f5ff, #0088ff);
+            color: #000;
+        }
+
+        .btn-join {
+            background: linear-gradient(135deg, #ff00ff, #ff0088);
+            color: #fff;
+        }
+
+        .btn-back {
+            background: rgba(255, 255, 255, 0.1);
+            color: #888;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .waiting-text {
+            font-size: 1.2rem;
+            color: #00f5ff;
+            margin-top: 20px;
+            animation: pulse 1.5s ease infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .copy-btn {
+            background: rgba(0, 245, 255, 0.2);
+            border: 1px solid #00f5ff;
+            color: #00f5ff;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background: #00f5ff;
+            color: #000;
+        }
+
+        /* ==================== OYUN EKRANI ==================== */
+        #game-screen {
+            display: none;
+            width: 100%;
+            height: 100vh;
+        }
+
+        #game-canvas {
+            display: block;
+        }
+
+        /* Skor Tablosu */
+        #score-board {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 40px;
+            font-family: 'Orbitron', sans-serif;
+            z-index: 100;
+        }
+
+        .player-score {
+            text-align: center;
+        }
+
+        .player-name {
+            font-size: 0.9rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+
+        .score-value {
+            font-size: 3rem;
+            font-weight: 900;
+        }
+
+        .score-p1 { color: #00f5ff; text-shadow: 0 0 20px rgba(0, 245, 255, 0.5); }
+        .score-p2 { color: #ff00ff; text-shadow: 0 0 20px rgba(255, 0, 255, 0.5); }
+
+        .score-divider {
+            font-size: 2rem;
+            color: #444;
+        }
+
+        /* Oyun Bilgileri */
+        #game-info {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 30px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.9rem;
+            color: #666;
+            z-index: 100;
+        }
+
+        /* Mesaj Overlay */
+        #message-overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: 900;
+            text-align: center;
+            z-index: 200;
+            display: none;
+        }
+
+        /* Pause Menü */
+        #pause-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 500;
+        }
+
+        .pause-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            font-weight: 900;
+            color: #00f5ff;
+            margin-bottom: 40px;
+        }
+
+        /* Settings Panel */
+        #settings-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+
+        .settings-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .settings-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
+        }
+
+        /* Volume Slider */
+        .volume-control {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 20px;
+            border-radius: 10px;
+            display: none;
+            z-index: 100;
+        }
+
+        .volume-control.active {
+            display: block;
+        }
+
+        .volume-slider {
+            width: 120px;
+            accent-color: #00f5ff;
+        }
+
+        /* Countdown */
+        #countdown {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 8rem;
+            font-weight: 900;
+            color: #00f5ff;
+            text-shadow: 0 0 50px rgba(0, 245, 255, 0.8);
+            z-index: 300;
+            display: none;
+        }
+
+        /* Ping Göstergesi */
+        #ping-display {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            color: #00ff00;
+            z-index: 100;
+            display: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .game-logo { font-size: 2.5rem; }
+            .menu-btn { padding: 15px 40px; font-size: 1rem; }
+            .lobby-container { min-width: 90%; padding: 30px 20px; }
+            .room-code-display { font-size: 1.8rem; }
+            #score-board { gap: 20px; }
+            .score-value { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- MENU EKRANI -->
+    <div id="menu-screen">
+        <div class="menu-container">
+            <h1 class="game-logo">🏓 PING PONG</h1>
+            <p class="game-subtitle">ONLINE MULTIPLAYER</p>
+            
+            <div class="menu-buttons">
+                <button class="menu-btn btn-online" onclick="showLobby()">
+                    🌐 Online Oyna
+                </button>
+                <button class="menu-btn btn-bot" onclick="startBotGame()">
+                    🤖 Bota Karşı
+                </button>
+                <button class="menu-btn btn-practice" onclick="startPractice()">
+                    🎯 Antrenman
+                </button>
+            </div>
+            
+            <div style="color: #666; font-size: 0.9rem;">
+                <p>Fare ile raketinizi kontrol edin</p>
+                <p>ESC - Pause | M - Ses Açık/Kapalı</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOBBY EKRANI -->
+    <div id="lobby-screen">
+        <div class="lobby-container">
+            <h2 class="lobby-title">🌐 Online Lobi</h2>
+            
+            <div id="create-room-section" class="room-section">
+                <h3>Yeni Oda Oluştur</h3>
+                <button class="lobby-btn btn-create" onclick="createRoom()">Oda Oluştur</button>
+            </div>
+            
+            <div id="room-created-section" class="room-section" style="display: none;">
+                <h3>Oda Kodunuz</h3>
+                <div class="room-code-display" id="room-code">XXXX</div>
+                <br>
+                <button class="copy-btn" onclick="copyRoomCode()">📋 Kodu Kopyala</button>
+                <p class="waiting-text" id="waiting-text">Rakip bekleniyor...</p>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 30px 0;">
+            
+            <div class="room-section">
+                <h3>Odaya Katıl</h3>
+                <input type="text" class="room-input" id="join-room-input" placeholder="XXXX" maxlength="4">
+                <br><br>
+                <button class="lobby-btn btn-join" onclick="joinRoom()">Odaya Katıl</button>
+            </div>
+            
+            <br>
+            <button class="lobby-btn btn-back" onclick="backToMenu()">← Geri</button>
+        </div>
+    </div>
+
+    <!-- OYUN EKRANI -->
+    <div id="game-screen">
+        <canvas id="game-canvas"></canvas>
+        
+        <div id="score-board">
+            <div class="player-score">
+                <div class="player-name" id="p1-name">SEN</div>
+                <div class="score-value score-p1" id="score-p1">0</div>
+            </div>
+            <div class="score-divider">:</div>
+            <div class="player-score">
+                <div class="player-name" id="p2-name">RAKİP</div>
+                <div class="score-value score-p2" id="score-p2">0</div>
+            </div>
+        </div>
+        
+        <div id="settings-panel">
+            <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
+        </div>
+        
+        <div class="volume-control" id="volume-control">
+            <label style="display: block; margin-bottom: 10px; color: #888;">🔊 Ses</label>
+            <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="50" onchange="setVolume(this.value)">
+        </div>
+        
+        <div id="ping-display">PING: --ms</div>
+        
+        <div id="game-info">
+            <div class="info-item">
+                <span>🎮 FARE - Hareket</span>
+            </div>
+            <div class="info-item">
+                <span>⏸️ ESC - Pause</span>
+            </div>
+        </div>
+        
+        <div id="countdown"></div>
+        <div id="message-overlay"></div>
+    </div>
+
+    <!-- PAUSE MENU -->
+    <div id="pause-menu">
+        <h2 class="pause-title">⏸️ DURAKLATILDI</h2>
+        <button class="menu-btn btn-online" onclick="resumeGame()">▶️ Devam Et</button>
+        <br><br>
+        <button class="menu-btn btn-back" onclick="quitGame()">🚪 Oyundan Çık</button>
+    </div>
+
+    <script>
+        // Socket.io yoksa boş bir mock oluştur
+        if (typeof io === 'undefined') {
+            window.io = function() {
+                return {
+                    connected: false,
+                    on: function() {},
+                    emit: function() {}
+                };
+            };
+        }
+    </script>
+    <script src="game-v2.js"></script>
+</body>
+</html>
