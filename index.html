@@ -422,21 +422,38 @@ let table, net, ball, paddle, opponentPaddle;
 let gameState = 'menu';
 let gameMode = 'bot';
 
-const TABLE = { length: 3.5, width: 2, height: 0.76, netHeight: 0.15 };
-const PHYSICS = { gravity: -8, ballRadius: 0.025, paddleRadius: 0.095, bounce: 0.85 };
+// BÜYÜK MASA - daha fazla reaksiyon süresi
+const TABLE = { length: 5.0, width: 2.8, height: 0.76, netHeight: 0.16 };
+
+// FİZİK - daha yavaş ve kontrollü
+const PHYSICS = { 
+    gravity: -7,        // Yerçekimi
+    ballRadius: 0.028, 
+    paddleRadius: 0.12, // Daha büyük raket
+    bounce: 0.82,
+    airResistance: 0.998,
+    magnusStrength: 0.5 // Falso etkisi
+};
 
 let ballPos = { x: 0, y: TABLE.height + 0.2, z: 0.8 };
 let ballVel = { x: 0, y: 0, z: 0 };
-let ballSpin = { x: 0, z: 0 };
+let ballSpin = { x: 0, y: 0, z: 0 };
 
-let paddlePos = { x: 0, y: TABLE.height + 0.12, z: TABLE.length/2 + 0.15 };
-let paddlePrev = { x: 0, y: TABLE.height + 0.12, z: TABLE.length/2 + 0.15 };
+// SEKME SAYACI - masa tenisi kuralları için
+let bounceCount = { player: 0, opponent: 0 };  // Her tarafta kaç kez sekti
+let lastBounceZone = null;  // 'player' veya 'opponent'
+let lastHitter = null;      // Son vuran kim
+
+let paddlePos = { x: 0, y: TABLE.height + 0.12, z: TABLE.length/2 + 0.2 };
+let paddlePrev = { x: 0, y: TABLE.height + 0.12, z: TABLE.length/2 + 0.2 };
 let paddleVel = { x: 0, y: 0, z: 0 };
-let paddleAngle = 0; // Raket eğim açısı
+let paddleAngleX = 0; // Sağ-sol eğim
+let paddleAngleY = 0; // İleri-geri eğim
 
-let oppPos = { x: 0, y: TABLE.height + 0.12, z: -TABLE.length/2 - 0.15 };
+let oppPos = { x: 0, y: TABLE.height + 0.12, z: -TABLE.length/2 - 0.2 };
 
-let mouse = { x: 0, y: 0 };
+let mouse = { x: 0, y: 0, prevX: 0, prevY: 0 };
+let mouseVel = { x: 0, y: 0 };
 let scores = { player: 0, opponent: 0 };
 let servingPlayer = 'player';
 let servePhase = 0;
@@ -449,9 +466,10 @@ function init() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a1a2e);
     
-    camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100);
-    camera.position.set(0, TABLE.height + 1.5, TABLE.length/2 + 2.5);
-    camera.lookAt(0, TABLE.height, -TABLE.length/4);
+    camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 100);
+    // Daha iyi kamera açısı - eğik ve yukarıdan
+    camera.position.set(0, TABLE.height + 2.2, TABLE.length/2 + 3.5);
+    camera.lookAt(0, TABLE.height, -TABLE.length/5);
     
     renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -518,31 +536,64 @@ function createBall() {
 }
 
 function createPaddles() {
-    const geo = new THREE.CylinderGeometry(PHYSICS.paddleRadius, PHYSICS.paddleRadius, 0.01, 32);
+    // Raket yüzeyi
+    const paddleGeo = new THREE.CylinderGeometry(PHYSICS.paddleRadius, PHYSICS.paddleRadius, 0.012, 32);
     
-    // Player paddle
+    // Player paddle - KIRMIZI
     const pMat = new THREE.MeshStandardMaterial({ color: 0xcc0000 });
-    paddle = new THREE.Mesh(geo, pMat);
+    paddle = new THREE.Mesh(paddleGeo, pMat);
     paddle.castShadow = true;
-    scene.add(paddle);
     
-    // Player handle - pointing toward player (positive Z)
-    const handleGeo = new THREE.CylinderGeometry(0.012, 0.018, 0.12, 16);
+    // Raket kauçuk yüzeyi
+    const rubberGeo = new THREE.CylinderGeometry(PHYSICS.paddleRadius - 0.005, PHYSICS.paddleRadius - 0.005, 0.004, 32);
+    const rubberMat = new THREE.MeshStandardMaterial({ color: 0x880000 });
+    const rubber1 = new THREE.Mesh(rubberGeo, rubberMat);
+    rubber1.position.y = 0.006;
+    paddle.add(rubber1);
+    const rubber2 = new THREE.Mesh(rubberGeo, rubberMat);
+    rubber2.position.y = -0.006;
+    paddle.add(rubber2);
+    
+    // Player handle - RAKETLE BİRLEŞİK (Y ekseninde, aşağıda)
+    const handleGeo = new THREE.CylinderGeometry(0.014, 0.02, 0.13, 16);
     const handleMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21 });
     const handle = new THREE.Mesh(handleGeo, handleMat);
-    handle.position.set(0, 0, PHYSICS.paddleRadius + 0.05);
+    handle.position.y = -0.07; // Raketin altında
     paddle.add(handle);
     
-    // Opponent paddle
-    const oMat = new THREE.MeshStandardMaterial({ color: 0x0066cc });
-    opponentPaddle = new THREE.Mesh(geo.clone(), oMat);
-    opponentPaddle.castShadow = true;
-    scene.add(opponentPaddle);
+    // Sap kavrama
+    const gripGeo = new THREE.CylinderGeometry(0.016, 0.016, 0.06, 16);
+    const gripMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+    const grip = new THREE.Mesh(gripGeo, gripMat);
+    grip.position.y = -0.1;
+    paddle.add(grip);
     
-    // Opponent handle - pointing down (negative Y direction from paddle)
+    scene.add(paddle);
+    
+    // Opponent paddle - MAVİ
+    const oMat = new THREE.MeshStandardMaterial({ color: 0x0066cc });
+    opponentPaddle = new THREE.Mesh(paddleGeo.clone(), oMat);
+    opponentPaddle.castShadow = true;
+    
+    // Rakip kauçuk
+    const oppRubberMat = new THREE.MeshStandardMaterial({ color: 0x003388 });
+    const oppRubber1 = new THREE.Mesh(rubberGeo.clone(), oppRubberMat);
+    oppRubber1.position.y = 0.006;
+    opponentPaddle.add(oppRubber1);
+    const oppRubber2 = new THREE.Mesh(rubberGeo.clone(), oppRubberMat);
+    oppRubber2.position.y = -0.006;
+    opponentPaddle.add(oppRubber2);
+    
+    // Rakip sap - YUKARI (bizden bakınca)
     const oppHandle = new THREE.Mesh(handleGeo.clone(), handleMat);
-    oppHandle.position.set(0, 0, -(PHYSICS.paddleRadius + 0.05));
+    oppHandle.position.y = 0.07;
     opponentPaddle.add(oppHandle);
+    
+    const oppGrip = new THREE.Mesh(gripGeo.clone(), gripMat);
+    oppGrip.position.y = 0.1;
+    opponentPaddle.add(oppGrip);
+    
+    scene.add(opponentPaddle);
 }
 
 function createFloor() {
@@ -557,8 +608,21 @@ function createFloor() {
 // ===== EVENTS =====
 function setupEvents() {
     document.addEventListener('mousemove', (e) => {
+        mouse.prevX = mouse.x;
+        mouse.prevY = mouse.y;
         mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        
+        // Mouse hızını hesapla (falso için)
+        mouseVel.x = (mouse.x - mouse.prevX) * 60;
+        mouseVel.y = (mouse.y - mouse.prevY) * 60;
+        
+        // Custom cursor güncelle
+        const cursor = document.getElementById('custom-cursor');
+        if (cursor) {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        }
     });
     
     document.addEventListener('click', () => {
@@ -598,53 +662,74 @@ function prepareServe() {
     gameState = 'serving';
     servePhase = 0;
     
+    // Sekme sayaçlarını sıfırla
+    bounceCount = { player: 0, opponent: 0 };
+    lastBounceZone = null;
+    lastHitter = null;
+    
     if (servingPlayer === 'player') {
-        // Ball starts in front of paddle, ready to toss
         ballPos = { 
             x: paddlePos.x, 
-            y: paddlePos.y + 0.08, 
+            y: paddlePos.y + 0.1, 
             z: paddlePos.z - 0.15 
         };
         ballVel = { x: 0, y: 0, z: 0 };
-        showMsg('🏓 SPACE veya TIKLA = Topu at!', 3000);
+        ballSpin = { x: 0, y: 0, z: 0 };
+        showMsg('🏓 TIKLA veya SPACE = Servis!', 3000);
     } else {
-        ballPos = { x: oppPos.x, y: TABLE.height + 0.15, z: -TABLE.length/2 + 0.2 };
+        ballPos = { x: oppPos.x, y: TABLE.height + 0.2, z: -TABLE.length/2 + 0.3 };
         ballVel = { x: 0, y: 0, z: 0 };
         showMsg('🤖 Rakip servis...', 1000);
-        setTimeout(() => { if (gameState === 'serving') opponentServe(); }, 1200);
+        setTimeout(() => { if (gameState === 'serving') opponentServe(); }, 1500);
     }
 }
 
 function tossBall() {
     servePhase = 1;
-    // Toss ball up and slightly forward
-    ballVel = { x: 0, y: 4, z: -0.5 };
+    ballVel = { x: 0, y: 3.5, z: -0.3 };
     playSound(400);
-    showMsg('🎯 Raketi topa götür!', 2000);
+    showMsg('🎯 Raketinle vur!', 2000);
 }
 
 function playerServe() {
     servePhase = 2;
     gameState = 'playing';
+    lastHitter = 'player';
+    bounceCount = { player: 0, opponent: 0 };
     playSound(800);
     
-    // Ball goes toward opponent with spin based on paddle movement
-    const power = Math.min(5 + Math.abs(paddleVel.z) * 0.3, 8);
+    // Servis - UZAĞA GİTMELİ
+    const power = 3.5 + Math.abs(paddleVel.z) * 0.15;
     ballVel = {
-        x: paddleVel.x * 0.3 + (Math.random() - 0.5) * 0.5,
-        y: 1.5,
+        x: paddleVel.x * 0.5,
+        y: 2.0,
         z: -power
     };
-    ballSpin = { x: paddleVel.y * 0.3, z: paddleVel.x * 0.3 };
+    ballSpin = { 
+        x: -paddleVel.y * 0.3, 
+        y: 0,
+        z: -paddleVel.x * 0.35 
+    };
 }
 
 function opponentServe() {
     servePhase = 2;
     gameState = 'playing';
+    lastHitter = 'opponent';
+    bounceCount = { player: 0, opponent: 0 };
     playSound(800);
     
-    ballVel = { x: (Math.random()-0.5)*2, y: -2, z: 3 };
-    ballSpin = { x: (Math.random()-0.5)*3, z: (Math.random()-0.5)*3 };
+    const targetX = (Math.random()-0.5) * TABLE.width * 0.4;
+    ballVel = { 
+        x: (targetX - ballPos.x) * 0.3, 
+        y: -1.8, 
+        z: 3.0 + Math.random() * 0.5 
+    };
+    ballSpin = { 
+        x: (Math.random()-0.5) * 2, 
+        y: 0,
+        z: (Math.random()-0.5) * 2 
+    };
 }
 
 function update(dt) {
@@ -655,43 +740,52 @@ function update(dt) {
     paddlePrev.y = paddlePos.y;
     paddlePrev.z = paddlePos.z;
     
-    // X: left-right from mouse X - MORE RESPONSIVE
-    const targetX = mouse.x * (TABLE.width/2 + 0.2);
+    // ===== TAM BİREBİR MOUSE TAKİBİ =====
+    // X: sağ-sol - DOĞRUDAN mouse pozisyonu
+    const targetX = mouse.x * (TABLE.width/2 + 0.5);
     
-    // Z: depth from mouse Y
-    const minZ = TABLE.length/2 - 0.5;
-    const maxZ = TABLE.length/2 + 0.35;
-    const targetZ = maxZ - (mouse.y + 1) * 0.5 * (maxZ - minZ);
+    // Z: derinlik kontrolü
+    const minZ = TABLE.length/2 - 1.2;
+    const maxZ = TABLE.length/2 + 0.6;
+    const zRange = maxZ - minZ;
+    const targetZ = maxZ - ((mouse.y + 1) / 2) * zRange;
     
-    // Y: height
-    const targetY = TABLE.height + 0.1 + (1 - (mouse.y + 1) * 0.25) * 0.12;
+    // Y: yükseklik
+    const targetY = TABLE.height + 0.15;
     
-    // SHARP movement - direct follow (0.4 = very responsive)
-    paddlePos.x += (targetX - paddlePos.x) * 0.4;
-    paddlePos.y += (targetY - paddlePos.y) * 0.4;
-    paddlePos.z += (targetZ - paddlePos.z) * 0.4;
+    // %100 TAKİP - mouse neredeyse raket orada
+    paddlePos.x = targetX;
+    paddlePos.y = targetY;
+    paddlePos.z = targetZ;
     
-    // Clamp
-    paddlePos.x = Math.max(-TABLE.width/2 - 0.2, Math.min(TABLE.width/2 + 0.2, paddlePos.x));
-    paddlePos.y = Math.max(TABLE.height + 0.05, Math.min(TABLE.height + 0.3, paddlePos.y));
+    // Sınırlar
+    paddlePos.x = Math.max(-TABLE.width/2 - 0.5, Math.min(TABLE.width/2 + 0.5, paddlePos.x));
+    paddlePos.y = Math.max(TABLE.height + 0.05, Math.min(TABLE.height + 0.4, paddlePos.y));
     paddlePos.z = Math.max(minZ, Math.min(maxZ, paddlePos.z));
     
-    // Calculate velocity
+    // Hız hesapla (falso için)
     paddleVel.x = (paddlePos.x - paddlePrev.x) / dt;
     paddleVel.y = (paddlePos.y - paddlePrev.y) / dt;
     paddleVel.z = (paddlePos.z - paddlePrev.z) / dt;
     
-    // PADDLE ANGLE based on mouse X position
-    // Mouse right = paddle tilts right (handle goes left)
-    // Mouse left = paddle tilts left (handle goes right)
-    const targetAngle = -mouse.x * 0.4; // Max ~23 degrees tilt
-    paddleAngle += (targetAngle - paddleAngle) * 0.3;
+    // ===== RAKET EĞİMİ =====
+    const targetAngleX = -mouseVel.x * 0.08; // Hareket yönüne göre eğim
+    const targetAngleY = mouseVel.y * 0.05;
     
-    // Opponent AI
+    paddleAngleX += (targetAngleX - paddleAngleX) * 0.6;
+    paddleAngleY += (targetAngleY - paddleAngleY) * 0.5;
+    // Eğimi sınırla
+    paddleAngleX = Math.max(-0.5, Math.min(0.5, paddleAngleX));
+    paddleAngleY = Math.max(-0.3, Math.min(0.3, paddleAngleY));
+    
+    // Rakip AI
     if (gameState === 'playing' && ballVel.z < 0) {
-        const t = Math.abs((oppPos.z - ballPos.z) / ballVel.z);
-        const targetX = ballPos.x + ballVel.x * t * 0.7;
-        oppPos.x += (targetX - oppPos.x) * 0.05;
+        const timeToReach = Math.abs((oppPos.z - ballPos.z) / (ballVel.z || 0.1));
+        let predictedX = ballPos.x + ballVel.x * timeToReach * 0.85;
+        predictedX += ballSpin.z * timeToReach * 0.25;
+        
+        const aiSpeed = gameMode === 'practice' ? 0.025 : 0.05;
+        oppPos.x += (predictedX - oppPos.x) * aiSpeed;
         oppPos.x = Math.max(-TABLE.width/2, Math.min(TABLE.width/2, oppPos.x));
     }
     
@@ -703,132 +797,213 @@ function update(dt) {
     // Ball physics during serve
     if (gameState === 'serving' && servingPlayer === 'player') {
         if (servePhase === 0) {
-            // Ball follows paddle position
+            // Top raket önünde bekler
             ballPos.x = paddlePos.x;
-            ballPos.y = paddlePos.y + 0.08;
+            ballPos.y = paddlePos.y + 0.1;
             ballPos.z = paddlePos.z - 0.12;
         } else if (servePhase === 1) {
-            // Ball tossed - apply gravity
+            // Top atıldı - yerçekimi uygula
             ballVel.y += PHYSICS.gravity * dt;
             ballPos.x += ballVel.x * dt;
             ballPos.y += ballVel.y * dt;
             ballPos.z += ballVel.z * dt;
             
-            // Check if paddle hits tossed ball - LARGER hit area for easier serve
+            // Raket topa vuruyor mu? - BÜYÜK vuruş alanı
             const dist = Math.sqrt(
                 (ballPos.x - paddlePos.x)**2 +
                 (ballPos.y - paddlePos.y)**2 +
                 (ballPos.z - paddlePos.z)**2
             );
             
-            // Easier to hit - larger detection radius
-            if (dist < PHYSICS.paddleRadius + PHYSICS.ballRadius + 0.08) {
+            // Kolay vuruş - geniş alan
+            if (dist < PHYSICS.paddleRadius + PHYSICS.ballRadius + 0.12) {
                 playerServe();
             }
             
-            // Ball fell too low - reset serve
-            if (ballPos.y < TABLE.height - 0.1) {
+            // Top düştü - tekrar dene
+            if (ballPos.y < TABLE.height - 0.15) {
                 showMsg('❌ Kaçırdın! Tekrar dene.', 1500);
-                setTimeout(prepareServe, 1000);
+                setTimeout(prepareServe, 1200);
             }
         }
     }
     
     // Update meshes
     paddle.position.set(paddlePos.x, paddlePos.y, paddlePos.z);
-    // Paddle rotation: base rotation + tilt based on mouse position
-    paddle.rotation.set(Math.PI/2, 0, paddleAngle);
+    // Raket yatay duracak, eğim hareketle olacak
+    paddle.rotation.set(0, 0, paddleAngleX);
     
     opponentPaddle.position.set(oppPos.x, oppPos.y, oppPos.z);
-    opponentPaddle.rotation.set(Math.PI/2, 0, 0);
+    opponentPaddle.rotation.set(Math.PI, 0, 0); // Rakip raketi ters
     
     ball.position.set(ballPos.x, ballPos.y, ballPos.z);
-    ball.rotation.x += ballSpin.x * dt * 2;
-    ball.rotation.z += ballSpin.z * dt * 2;
+    ball.rotation.x += ballSpin.x * dt * 3;
+    ball.rotation.y += ballSpin.y * dt * 3;
+    ball.rotation.z += ballSpin.z * dt * 3;
 }
 
 function updateBall(dt) {
+    // Yerçekimi
     ballVel.y += PHYSICS.gravity * dt;
-    ballVel.x *= 0.999;
-    ballVel.z *= 0.999;
     
-    // Spin effect on ball trajectory (Magnus effect)
-    ballVel.x += ballSpin.z * 0.2 * dt;
-    ballVel.z -= ballSpin.x * 0.2 * dt;
-    ballSpin.x *= 0.998;
-    ballSpin.z *= 0.998;
+    // Hava direnci
+    ballVel.x *= PHYSICS.airResistance;
+    ballVel.z *= PHYSICS.airResistance;
     
+    // ===== MAGNUS ETKİSİ (FALSO) =====
+    const magnus = PHYSICS.magnusStrength;
+    ballVel.x += ballSpin.z * magnus * dt;
+    ballVel.z -= ballSpin.x * magnus * 0.4 * dt;
+    ballVel.y += ballSpin.x * magnus * 0.25 * dt;
+    
+    // Spin azalması
+    ballSpin.x *= 0.996;
+    ballSpin.y *= 0.996;
+    ballSpin.z *= 0.996;
+    
+    // Pozisyon güncelle
     ballPos.x += ballVel.x * dt;
     ballPos.y += ballVel.y * dt;
     ballPos.z += ballVel.z * dt;
     
-    // Table bounce
+    // ===== MASA SIÇRAMASI - MASA TENİSİ KURALLARI =====
     if (ballPos.y <= TABLE.height + PHYSICS.ballRadius && ballVel.y < 0) {
         if (Math.abs(ballPos.x) <= TABLE.width/2 && Math.abs(ballPos.z) <= TABLE.length/2) {
+            
+            // Hangi bölgede sekti?
+            const zone = ballPos.z > 0 ? 'player' : 'opponent';
+            
+            // KURAL: Her alanda sadece 1 kez sekebilir
+            if (zone === lastBounceZone) {
+                // Aynı alanda 2. kez sekti = FOUL
+                if (zone === 'player') {
+                    // Oyuncu tarafında 2. sekme = rakip sayı
+                    showMsg('⚠️ 2. sekme! Rakip sayı!', 1500);
+                    score('opponent');
+                    return;
+                } else {
+                    // Rakip tarafında 2. sekme = oyuncu sayı
+                    showMsg('✅ Rakip 2. sekme yaptı!', 1500);
+                    score('player');
+                    return;
+                }
+            }
+            
+            lastBounceZone = zone;
+            bounceCount[zone]++;
+            
+            // Sıçrama fiziği
             ballPos.y = TABLE.height + PHYSICS.ballRadius;
             ballVel.y = -ballVel.y * PHYSICS.bounce;
-            // Spin affects bounce direction
-            ballVel.x += ballSpin.z * 0.08;
-            ballVel.z -= ballSpin.x * 0.08;
+            
+            // Spin etkisi
+            ballVel.x += ballSpin.z * 0.12;
+            ballVel.z -= ballSpin.x * 0.1;
+            
             playSound(500);
         }
     }
     
-    // Net
-    if (Math.abs(ballPos.z) < 0.04 && ballPos.y < TABLE.height + TABLE.netHeight + PHYSICS.ballRadius && ballPos.y > TABLE.height) {
-        ballVel.z *= -0.3;
-        ballPos.z = Math.sign(ballPos.z) * 0.05;
+    // File çarpması
+    if (Math.abs(ballPos.z) < 0.06 && ballPos.y < TABLE.height + TABLE.netHeight + PHYSICS.ballRadius && ballPos.y > TABLE.height) {
+        // File'e değdi
+        ballVel.z *= -0.2;
+        ballVel.y *= 0.4;
+        ballPos.z = Math.sign(ballPos.z) * 0.07;
         playSound(200);
     }
     
-    // Player paddle collision
+    // ===== OYUNCU RAKET ÇARPIŞMASI =====
     const pDist = Math.sqrt((ballPos.x-paddlePos.x)**2 + (ballPos.y-paddlePos.y)**2 + (ballPos.z-paddlePos.z)**2);
-    if (pDist < PHYSICS.paddleRadius + PHYSICS.ballRadius + 0.02 && ballVel.z > 0) {
+    const hitRadius = PHYSICS.paddleRadius + PHYSICS.ballRadius + 0.05;
+    
+    if (pDist < hitRadius && ballVel.z > 0 && lastHitter !== 'player') {
+        lastHitter = 'player';
+        lastBounceZone = null; // Vuruştan sonra sekme sayacı sıfırla
+        bounceCount = { player: 0, opponent: 0 };
+        
         playSound(800);
         
-        // Hit position on paddle
+        // Vuruş pozisyonu
         const hitX = (ballPos.x - paddlePos.x) / PHYSICS.paddleRadius;
+        const hitY = (ballPos.y - paddlePos.y) / PHYSICS.paddleRadius;
         
-        // Base power - SLOWER for more control
-        const basePower = 3.5;
-        const extraPower = Math.min(Math.abs(paddleVel.z) * 0.15, 2);
+        // GÜÇ - UZAĞA GİTMELİ
+        const basePower = 4.0;  // Daha güçlü vuruş
+        const swingPower = Math.min(Math.abs(paddleVel.z) * 0.2, 2.0);
+        const totalPower = basePower + swingPower;
         
-        // Direction based on hit position and paddle angle
-        ballVel.x = hitX * 2 + paddleVel.x * 0.25;
-        ballVel.y = 2;
-        ballVel.z = -(basePower + extraPower);
+        // Yön
+        ballVel.x = hitX * 2.0 + paddleVel.x * 0.5;
+        ballVel.y = 2.2;
+        ballVel.z = -totalPower;
         
-        // SPIN based on paddle movement direction
-        // Moving right while hitting = ball spins and curves LEFT
-        // Moving left while hitting = ball spins and curves RIGHT
-        ballSpin.x = paddleVel.y * 0.15;  // Topspin/backspin from vertical movement
-        ballSpin.z = -paddleVel.x * 0.25; // Sidespin - REVERSED for realistic curve
+        // ===== FALSO SİSTEMİ =====
+        const sideSpinFromMovement = -paddleVel.x * 0.5;
+        const sideSpinFromAngle = paddleAngleX * 4;
+        const topSpin = -paddleVel.y * 0.35;
         
-        // Add spin from paddle angle
-        ballSpin.z += paddleAngle * 2;
+        ballSpin.x = topSpin;
+        ballSpin.y = 0;
+        ballSpin.z = sideSpinFromMovement + sideSpinFromAngle;
     }
     
-    // Opponent paddle collision
+    // ===== RAKİP RAKET ÇARPIŞMASI =====
     const oDist = Math.sqrt((ballPos.x-oppPos.x)**2 + (ballPos.y-oppPos.y)**2 + (ballPos.z-oppPos.z)**2);
-    if (oDist < PHYSICS.paddleRadius + PHYSICS.ballRadius + 0.02 && ballVel.z < 0) {
+    if (oDist < hitRadius && ballVel.z < 0 && lastHitter !== 'opponent') {
+        lastHitter = 'opponent';
+        lastBounceZone = null;
+        bounceCount = { player: 0, opponent: 0 };
+        
         playSound(800);
         
-        // Opponent aims toward player's reachable area - SLOWER
-        const targetX = (Math.random()-0.5) * TABLE.width * 0.5;
-        ballVel.x = (targetX - ballPos.x) * 0.5;
-        ballVel.y = 2;
-        ballVel.z = 3 + Math.random() * 1.5; // Slower returns
+        // Rakip güçlü vuruş
+        const targetX = (Math.random()-0.5) * TABLE.width * 0.7;
+        const power = 3.5 + Math.random() * 1.0;
         
-        // Random spin
-        ballSpin.x = (Math.random()-0.5) * 2;
-        ballSpin.z = (Math.random()-0.5) * 2;
+        ballVel.x = (targetX - ballPos.x) * 0.5;
+        ballVel.y = 2.0;
+        ballVel.z = power;
+        
+        // Rakip spin
+        ballSpin.x = (Math.random()-0.5) * 3;
+        ballSpin.z = (Math.random()-0.5) * 3;
     }
     
-    // Out of bounds
-    if (ballPos.z > TABLE.length/2 + 1) { score('opponent'); return; }
-    if (ballPos.z < -TABLE.length/2 - 1) { score('player'); return; }
-    if (ballPos.y < TABLE.height - 0.5) {
-        score(ballPos.z > 0 ? 'opponent' : 'player');
+    // ===== SINIR DIŞI =====
+    // Masanın arkasına geçti (sekmeden)
+    if (ballPos.z > TABLE.length/2 + 0.5 && lastBounceZone !== 'player') {
+        showMsg('❌ Masana değmedi!', 1500);
+        score('opponent');
+        return;
+    }
+    if (ballPos.z < -TABLE.length/2 - 0.5 && lastBounceZone !== 'opponent') {
+        showMsg('✅ Rakip masasına değmedi!', 1500);
+        score('player');
+        return;
+    }
+    
+    // Tamamen sınır dışı
+    if (ballPos.z > TABLE.length/2 + 2) { score('opponent'); return; }
+    if (ballPos.z < -TABLE.length/2 - 2) { score('player'); return; }
+    
+    // Yere düştü
+    if (ballPos.y < TABLE.height - 1.0) {
+        if (lastHitter === 'player') {
+            score('opponent');
+        } else {
+            score('player');
+        }
+        return;
+    }
+    
+    // Yan dışarı çıktı
+    if (Math.abs(ballPos.x) > TABLE.width + 1.5) {
+        if (lastHitter === 'player') {
+            score('opponent');
+        } else {
+            score('player');
+        }
     }
 }
 

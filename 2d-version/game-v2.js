@@ -17,18 +17,29 @@ let lastPing = 0;
 
 // ==================== PHYSICS CONSTANTS ====================
 const PHYSICS = {
-    gravity: 0.0008,
-    airResistance: 0.9995,
+    gravity: 0.001,
+    airResistance: 0.9998,      // Çok az direnç = hızlı top
     tableHeight: 0.15,
     netHeight: 0.08,
-    bounceFactor: 0.88,
-    spinDecay: 0.997,
-    maxSpin: 0.025,
+    bounceFactor: 0.9,
+    spinDecay: 0.99,            // Spin uzun sürer
+    maxSpin: 0.1,               // Yüksek spin limiti
     ballRadius: 12,
-    paddleWidth: 18,
-    paddleHeight: 110,
-    maxBallSpeed: 18,
-    minBallSpeed: 4
+    paddleWidth: 22,
+    paddleHeight: 150,
+    maxBallSpeed: 40,           // ÇOK HIZLI top
+    minBallSpeed: 18,           // Hızlı başlangıç
+    magnusStrength: 1.2,        // GÜÇLÜ falso eğrisi
+    spinTransfer: 0.008         // Güçlü spin aktarımı
+};
+
+// ==================== POWER SHOT SYSTEM ====================
+let powerShot = {
+    active: false,
+    timeLeft: 0,
+    cooldown: 0,
+    duration: 1500,      // 1.5 saniye aktif
+    cooldownTime: 6000   // 6 saniye bekleme
 };
 
 // ==================== GAME OBJECTS ====================
@@ -462,12 +473,13 @@ function resetBall(server = 'p1') {
     ball.y = canvas.height / 2;
     
     const direction = server === 'p1' ? 1 : -1;
-    const speed = PHYSICS.minBallSpeed + 1;
-    const angle = (Math.random() - 0.5) * Math.PI / 3;
+    const speed = PHYSICS.minBallSpeed;  // Hızlı başlangıç
+    const angle = (Math.random() - 0.5) * Math.PI / 6;
     
     ball.vx = speed * direction * Math.cos(angle);
     ball.vy = speed * Math.sin(angle);
     
+    // Spin sıfırla - yeni servis yeni falso
     ball.spin = { x: 0, y: 0, z: 0 };
     ball.trail = [];
     ball.lastHitBy = null;
@@ -549,10 +561,7 @@ function updatePaddlePosition(targetY) {
 }
 
 function handleClick(e) {
-    if (gameState === 'playing') {
-        const paddle = isHost ? paddles.p1 : paddles.p2;
-        paddle.powerCharge = Math.min(1, paddle.powerCharge + 0.3);
-    }
+    // Click artık bir şey yapmıyor
 }
 
 function handleKeyDown(e) {
@@ -565,11 +574,56 @@ function handleKeyDown(e) {
             gameSettings.soundEnabled = !gameSettings.soundEnabled;
             break;
         case ' ':
+            e.preventDefault();
             if (gameState === 'playing') {
-                const paddle = isHost ? paddles.p1 : paddles.p2;
-                paddle.powerCharge = 1;
+                activatePowerShot();
             }
             break;
+    }
+}
+
+// ==================== POWER SHOT FUNCTIONS ====================
+function activatePowerShot() {
+    // Cooldown kontrolü
+    if (powerShot.cooldown > 0) {
+        // Henüz hazır değil
+        return;
+    }
+    
+    // Zaten aktifse tekrar aktif etme
+    if (powerShot.active) {
+        return;
+    }
+    
+    // Power shot aktif et
+    powerShot.active = true;
+    powerShot.timeLeft = powerShot.duration;
+    
+    // Görsel efekt
+    playSound('smash');
+    flashEffect = { active: true, color: '#ffff00', alpha: 0.3 };
+    
+    console.log('⚡ POWER SHOT AKTİF! 1.5 saniye');
+}
+
+function updatePowerShot(deltaTime) {
+    // Aktifse süreyi azalt
+    if (powerShot.active) {
+        powerShot.timeLeft -= deltaTime;
+        if (powerShot.timeLeft <= 0) {
+            powerShot.active = false;
+            powerShot.cooldown = powerShot.cooldownTime;
+            console.log('🔄 Power shot bitti, 6 saniye bekleme...');
+        }
+    }
+    
+    // Cooldown'ı azalt
+    if (powerShot.cooldown > 0) {
+        powerShot.cooldown -= deltaTime;
+        if (powerShot.cooldown <= 0) {
+            powerShot.cooldown = 0;
+            console.log('✅ Power shot hazır!');
+        }
     }
 }
 
@@ -607,16 +661,25 @@ function quitGame() {
 }
 
 // ==================== GAME LOOP ====================
+let lastTime = performance.now();
+
 function gameLoop() {
     if (gameState !== 'playing') return;
     
-    update();
+    const currentTime = performance.now();
+    const deltaTime = currentTime - lastTime;
+    lastTime = currentTime;
+    
+    update(deltaTime);
     render();
     
     animationId = requestAnimationFrame(gameLoop);
 }
 
-function update() {
+function update(deltaTime = 16) {
+    // Power shot sistemini güncelle
+    updatePowerShot(deltaTime);
+    
     if (gameMode === 'bot') {
         updateBot();
     } else if (gameMode === 'practice') {
@@ -648,41 +711,54 @@ function updateBall() {
     }
     
     // ==================== SPIN PHYSICS (Magnus Effect) ====================
-    const magnusForceX = ball.spin.y * 0.4;
-    const magnusForceY = ball.spin.x * 0.35;
+    // Falso etkisi - spin yönüne göre top eğrilir
+    const magnusForceX = ball.spin.y * PHYSICS.magnusStrength;
+    const magnusForceY = ball.spin.x * PHYSICS.magnusStrength;
+    
+    // Yatay hızın yönü korunmalı (geri dönme önleme)
+    const originalDirection = Math.sign(ball.vx);
     
     ball.vx += magnusForceX;
     ball.vy += magnusForceY;
     
+    // Top asla geri dönmemeli
+    if (Math.sign(ball.vx) !== originalDirection && originalDirection !== 0) {
+        ball.vx = originalDirection * Math.abs(ball.vx);
+    }
+    
     ball.x += ball.vx;
     ball.y += ball.vy;
     
-    const spinMagnitude = Math.abs(ball.spin.x) + Math.abs(ball.spin.y);
-    const dragFactor = PHYSICS.airResistance - spinMagnitude * 0.001;
-    ball.vx *= dragFactor;
-    ball.vy *= dragFactor;
+    // Hava direnci
+    ball.vx *= PHYSICS.airResistance;
+    ball.vy *= PHYSICS.airResistance;
     
+    // Havada spin yavaşça azalır
     ball.spin.x *= PHYSICS.spinDecay;
     ball.spin.y *= PHYSICS.spinDecay;
     ball.spin.z *= PHYSICS.spinDecay;
     
-    // ==================== DUVAR ÇARPIŞMASI ====================
+    // ==================== DUVAR ÇARPIŞMASI - FALSO BİTER ====================
     if (ball.y - PHYSICS.ballRadius < 0) {
         ball.y = PHYSICS.ballRadius;
         ball.vy *= -PHYSICS.bounceFactor;
-        ball.spin.x *= -0.6;
-        ball.vx += ball.spin.y * 2;
+        // DUVARA ÇARPINCA FALSO BİTER
+        ball.spin.x = 0;
+        ball.spin.y = 0;
+        ball.spin.z = 0;
         playSound('wall');
-        createParticles(ball.x, ball.y, '#00f5ff', 8);
+        createParticles(ball.x, ball.y, '#00f5ff', 10);
     }
     
     if (ball.y + PHYSICS.ballRadius > canvas.height) {
         ball.y = canvas.height - PHYSICS.ballRadius;
         ball.vy *= -PHYSICS.bounceFactor;
-        ball.spin.x *= -0.6;
-        ball.vx += ball.spin.y * 2;
+        // DUVARA ÇARPINCA FALSO BİTER
+        ball.spin.x = 0;
+        ball.spin.y = 0;
+        ball.spin.z = 0;
         playSound('wall');
-        createParticles(ball.x, ball.y, '#00f5ff', 8);
+        createParticles(ball.x, ball.y, '#00f5ff', 10);
     }
     
     // ==================== RAKET ÇARPIŞMASI ====================
@@ -739,50 +815,73 @@ function handlePaddleHit(player) {
     const absSpeed = Math.abs(paddleSpeed);
     
     // ==================== FALSO (SPIN) SİSTEMİ ====================
-    let newSpinX = paddleSpeed * 0.0025;
-    let newSpinY = clampedHitPos * absSpeed * 0.001 * (isP1 ? 1 : -1);
+    // Ne kadar hızlı çekersen o kadar falso!
+    // Yukarı çekiş = topspin (top aşağı eğrilir)
+    // Aşağı çekiş = backspin (top yukarı eğrilir)
     
-    if (absSpeed > 8) {
-        newSpinX *= 1.5;
-        newSpinY *= 1.5;
+    // Paddle hızına göre spin hesapla - HIZLI ÇEKİŞ = GÜÇLÜ FALSO
+    const spinPower = paddleSpeed * PHYSICS.spinTransfer;
+    
+    // Çekiş hızına göre üstel artış (hızlı çekiş = çok daha fazla spin)
+    let spinMultiplier = 1;
+    if (absSpeed > 3) spinMultiplier = 1.5;
+    if (absSpeed > 6) spinMultiplier = 2.5;
+    if (absSpeed > 10) spinMultiplier = 4.0;
+    if (absSpeed > 15) spinMultiplier = 6.0;  // Çok hızlı çekiş = maksimum falso
+    
+    let newSpinX = spinPower * spinMultiplier;
+    let newSpinY = clampedHitPos * absSpeed * 0.003 * spinMultiplier * (isP1 ? 1 : -1);
+    
+    // Spin efekti göster
+    if (absSpeed > 5) {
         playSound('spin');
-        createSpinParticles(ball.x, ball.y, paddleSpeed > 0 ? '#ff6600' : '#00ff66', 12);
+        const spinColor = paddleSpeed > 0 ? '#ff6600' : '#00ff66';
+        createSpinParticles(ball.x, ball.y, spinColor, Math.min(25, absSpeed * 2));
     }
     
+    // Spin uygula (limitli)
     ball.spin.x = Math.max(-PHYSICS.maxSpin, Math.min(PHYSICS.maxSpin, newSpinX));
     ball.spin.y = Math.max(-PHYSICS.maxSpin, Math.min(PHYSICS.maxSpin, newSpinY));
     
     // ==================== HIZ HESAPLAMA ====================
     ball.vx *= -1;
     
-    const speedBoost = 1.05 + absSpeed * 0.01;
+    // Hız artışı
+    const speedBoost = 1.08 + absSpeed * 0.012;
     ball.vx *= speedBoost;
     
-    ball.vy += clampedHitPos * 4;
-    ball.vy += paddleSpeed * 0.3;
+    // Dikey yön - raket hareketine göre
+    ball.vy += clampedHitPos * 5;
+    ball.vy += paddleSpeed * 0.4;
     
-    if (paddle.powerCharge > 0.5) {
-        ball.vx *= 1.3;
-        ball.vy *= 1.1;
-        paddle.powerCharge = 0;
+    // ==================== POWER SHOT ====================
+    // Space'e basıldıysa ve aktifse güçlü vuruş
+    if (powerShot.active) {
+        ball.vx *= 1.6;  // %60 daha hızlı
+        ball.vy *= 1.3;
         
         playSound('smash');
-        createParticles(ball.x, ball.y, '#ffff00', 25);
-        screenShake.intensity = 8;
-        flashEffect = { active: true, color: '#fff', alpha: 0.3 };
+        createParticles(ball.x, ball.y, '#ffff00', 35);
+        createParticles(ball.x, ball.y, '#ff0000', 20);
+        screenShake.intensity = 15;
+        flashEffect = { active: true, color: '#ffff00', alpha: 0.5 };
     }
     
-    const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
-    if (speed > PHYSICS.maxBallSpeed) {
-        const scale = PHYSICS.maxBallSpeed / speed;
+    const currentSpeed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+    if (currentSpeed > PHYSICS.maxBallSpeed) {
+        const scale = PHYSICS.maxBallSpeed / currentSpeed;
         ball.vx *= scale;
         ball.vy *= scale;
     }
-    if (speed < PHYSICS.minBallSpeed) {
-        const scale = PHYSICS.minBallSpeed / speed;
+    if (currentSpeed < PHYSICS.minBallSpeed) {
+        const scale = PHYSICS.minBallSpeed / currentSpeed;
         ball.vx *= scale;
         ball.vy *= scale;
     }
+    
+    // Top her zaman doğru yöne gitmeli
+    if (isP1 && ball.vx < 0) ball.vx = Math.abs(ball.vx);
+    if (!isP1 && ball.vx > 0) ball.vx = -Math.abs(ball.vx);
     
     paddle.combo++;
     const otherPaddle = isP1 ? paddles.p2 : paddles.p1;
@@ -964,9 +1063,6 @@ function updateEffects() {
             flashEffect.active = false;
         }
     }
-    
-    paddles.p1.powerCharge *= 0.98;
-    paddles.p2.powerCharge *= 0.98;
 }
 
 // ==================== RENDER ====================
@@ -988,6 +1084,7 @@ function render() {
     drawBall();
     drawParticles();
     drawSpinUI();
+    drawPowerShotUI();
     
     ctx.restore();
     
@@ -996,6 +1093,68 @@ function render() {
         ctx.globalAlpha = flashEffect.alpha;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.globalAlpha = 1;
+    }
+}
+
+// ==================== POWER SHOT UI ====================
+function drawPowerShotUI() {
+    const barWidth = 200;
+    const barHeight = 20;
+    const x = canvas.width / 2 - barWidth / 2;
+    const y = canvas.height - 50;
+    
+    // Arkaplan
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(x - 5, y - 5, barWidth + 10, barHeight + 10);
+    
+    // Bar çerçeve
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, barWidth, barHeight);
+    
+    if (powerShot.active) {
+        // Aktif - sarı bar, azalıyor
+        const fillWidth = (powerShot.timeLeft / powerShot.duration) * barWidth;
+        
+        // Parlayan efekt
+        ctx.shadowColor = '#ffff00';
+        ctx.shadowBlur = 20;
+        
+        ctx.fillStyle = '#ffff00';
+        ctx.fillRect(x, y, fillWidth, barHeight);
+        
+        ctx.shadowBlur = 0;
+        
+        // Metin
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚡ POWER SHOT AKTİF! ⚡', canvas.width / 2, y - 10);
+        
+    } else if (powerShot.cooldown > 0) {
+        // Cooldown - kırmızı bar, doluyor
+        const fillWidth = (1 - powerShot.cooldown / powerShot.cooldownTime) * barWidth;
+        
+        ctx.fillStyle = '#ff4444';
+        ctx.fillRect(x, y, fillWidth, barHeight);
+        
+        // Metin
+        ctx.fillStyle = '#ff4444';
+        ctx.font = 'bold 14px Arial';
+        ctx.textAlign = 'center';
+        const secondsLeft = Math.ceil(powerShot.cooldown / 1000);
+        ctx.fillText(`Bekleniyor... ${secondsLeft}s`, canvas.width / 2, y - 10);
+        
+    } else {
+        // Hazır - yeşil bar
+        ctx.fillStyle = '#00ff00';
+        ctx.fillRect(x, y, barWidth, barHeight);
+        
+        // Metin
+        ctx.fillStyle = '#00ff00';
+        ctx.font = 'bold 14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('🚀 [SPACE] - GÜÇLÜ VURUŞ HAZIR!', canvas.width / 2, y - 10);
     }
 }
 
