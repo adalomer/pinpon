@@ -1,109 +1,129 @@
-# 🏓 3D Ping Pong - Masa Tenisi
+# 🏓 3D Ping Pong Pro
 
-Gerçek 3D masa tenisi oyunu! Three.js ile geliştirilmiş, fizik tabanlı falso sistemi, gerçekçi masa ve file, online multiplayer desteği.
-
-## 🎮 Özellikler
-
-### 3D Oyun Dünyası
-- **Gerçekçi Masa**: Yeşil masa, beyaz çizgiler, ayaklar
-- **File**: Direkleri ve ağı ile gerçekçi file
-- **Raket**: Kırmızı ve siyah kauçuk yüzeyli raket
-- **Top**: Parıltılı, spin göstergeli top
-- **Ortam**: Neon ışıklar, grid zemin, yıldızlar
-
-### Fizik Sistemi
-- **Magnus Etkisi**: Spin'li toplar eğrilir
-- **Topspin** 🟠: Raketi ileri iterek vur → Top aşağı eğrilir
-- **Backspin** 🟢: Raketi geri çekerek vur → Top yukarı eğrilir
-- **Sidespin** 🟡: Raketi yana iterek vur → Top yana eğrilir
-- **Yerçekimi & Hava Direnci**: Gerçekçi top fiziği
-
-### Kamera Sistemi
-- Fare ile raket kontrolü
-- Kamera raketi ve topu takip eder
-- Sağa-sola hareket ettikçe kamera kayar
-
-### Oyun Modları
-- **🌐 Online**: 4 haneli kod ile arkadaşlarla
-- **🤖 Bot**: Yapay zeka rakip
-- **🎯 Antrenman**: Kolay mod pratik
-
-## 🚀 Nasıl Oynanır
-
-### Başlatma
-```bash
-# 3D versiyonu tarayıcıda aç
-# index-3d.html dosyasını tarayıcıda aç
-
-# VEYA 2D versiyonu için
-# index.html dosyasını aç
-```
-
-### Kontroller
-
-| Kontrol | İşlev |
-|---------|-------|
-| **Fare Hareketi** | Raketi kontrol et |
-| **Hızlı İleri İtme** | Topspin (top aşağı eğrilir) |
-| **Hızlı Geri Çekme** | Backspin (top yukarı eğrilir) |
-| **Hızlı Sağa/Sola** | Sidespin (top yana eğrilir) |
-| **ESC** | Oyunu duraklat |
-
-## 🏆 Falso Nasıl Atılır?
-
-### Topspin (Turuncu Parıltı 🟠)
-```
-1. Topun geleceğini hesapla
-2. Raketi hızlıca İLERİ doğru hareket ettir
-3. Topa vur
-4. Top masa üzerinde aşağı doğru eğrilecek
-→ Rakip için zor yakalanır!
-```
-
-### Backspin (Yeşil Parıltı 🟢)
-```
-1. Topun geleceğini hesapla  
-2. Raketi hızlıca GERİ doğru çek
-3. Topa vur
-4. Top havada yukarı doğru eğrilecek
-→ Yavaşlar ve kısa düşer!
-```
-
-### Sidespin (Sarı Parıltı 🟡)
-```
-1. Topun geleceğini hesapla
-2. Raketi hızlıca SAĞA veya SOLA hareket ettir
-3. Topa vur
-4. Top yana doğru eğrilecek
-→ Rakibi yanıltır!
-```
+3D masa tenisi oyunu - Three.js ile geliştirildi.
 
 ## 📁 Dosya Yapısı
 
 ```
 pinpon/
-├── index-3d.html   # 3D Oyun (Three.js)
-├── game-3d.js      # 3D Oyun Motoru
-├── index.html      # 2D Oyun (Canvas)
-├── game-v2.js      # 2D Oyun Motoru
-├── server.js       # Socket.io Sunucusu (opsiyonel)
-├── package.json    # Node.js bağımlılıkları
-└── README.md       # Bu dosya
+├── index.html              # Tek dosyalı versiyon
+├── index-modular.html      # Modüler versiyon (yeni)
+├── README.md               # Bu dosya
+│
+├── css/
+│   └── style.css           # 🎨 Tüm stiller
+│
+└── js/
+    ├── main.js             # 🚀 Giriş noktası
+    ├── config.js           # ⚙️ Oyun sabitleri (masa, fizik)
+    ├── game.js             # 🎮 Ana oyun mantığı
+    ├── scene.js            # 🌍 Three.js sahne kurulumu
+    ├── table.js            # 🏓 Masa ve file
+    ├── ball.js             # ⚽ Top fiziği
+    ├── paddle.js           # 🏸 Raket kontrolü
+    ├── input.js            # 🖱️ Mouse/klavye
+    ├── sound.js            # 🔊 Ses efektleri
+    └── ui.js               # 📊 Kullanıcı arayüzü
+```
+
+## 📦 Modül Açıklamaları
+
+### `config.js` - Oyun Sabitleri
+- `TABLE` - Masa boyutları (2.74m x 1.525m x 0.76m - gerçek ölçüler)
+- `PHYSICS` - Fizik parametreleri (yerçekimi, sekme, spin etkisi)
+- `GAME_SETTINGS` - Oyun kuralları (11 sayı kazanır)
+
+### `scene.js` - 3D Sahne Kurulumu
+- `createScene()` - Sahne, kamera, renderer oluşturma
+- `createEnvironment()` - Zemin ve arka duvar
+- `setupLights()` - Işıklandırma
+- `handleResize()` - Pencere boyutlandırma
+
+### `table.js` - Masa ve File
+- `createTable()` - Masa üstü, beyaz çizgiler, bacaklar
+- `createNet()` - File ağı, direkler, üst çubuk
+
+### `ball.js` - Top Fiziği
+- `createBall()` - Top mesh'i oluşturma
+- `updateBall()` - Fizik güncelleme
+  - Yerçekimi ve hava direnci
+  - Magnus etkisi (spin/falso)
+  - Masa sekmesi
+  - File çarpması
+  - Raket çarpışması
+- `checkOutOfBounds()` - Sınır dışı kontrolü
+
+### `paddle.js` - Raket Kontrolü
+- `createPaddles()` - Oyuncu ve rakip raketleri
+- `updatePlayerPaddle()` - Mouse takibi ve eğim
+- `updateOpponentAI()` - Bot yapay zekası
+
+### `input.js` - Girdi Yönetimi
+- Mouse hareket ve tıklama
+- Klavye (SPACE servis, ESC pause)
+- Touch desteği (mobil)
+- Custom cursor efekti
+
+### `sound.js` - Ses Sistemi
+- `initAudio()` - Web Audio API başlatma
+- `playSound()` - Frekans bazlı ses
+- `SOUNDS` - Önceden tanımlı efektler (hit, bounce, score...)
+
+### `ui.js` - Kullanıcı Arayüzü
+- Menü göster/gizle
+- Skor güncellemesi
+- Mesaj gösterimi
+- Pause ekranı
+
+### `game.js` - Ana Oyun Mantığı
+- Oyun durumu yönetimi (menu, serving, playing, paused, ended)
+- Servis sistemi (önce kendi saha, sonra rakip)
+- Skor sistemi (11 sayı, 2 fark)
+- Animation döngüsü
+
+### `main.js` - Giriş Noktası
+- Oyunu başlatır
+
+## 🎮 Kontroller
+
+| Kontrol | Açıklama |
+|---------|----------|
+| 🖱️ Mouse Hareketi | Raket kontrolü |
+| ⬅️ Sola çekerek vur | Sağa falso |
+| ➡️ Sağa çekerek vur | Sola falso |
+| ⬆️ Yukarı çekerek | Topspin |
+| ⬇️ Aşağı çekerek | Backspin |
+| SPACE / Click | Servis başlat |
+| ESC | Duraklat |
+
+## 🏆 Oyun Kuralları
+
+- **11 sayıya** ilk ulaşan kazanır
+- En az **2 sayı fark** olmalı
+- Servis önce **kendi sahana** sekip sonra rakibe geçmeli
+- Her tarafta **tek sekme** hakkı (2. sekme = sayı kaybı)
+
+## 🚀 Çalıştırma
+
+### Modüler Versiyon (Önerilen)
+```bash
+cd pinpon
+python3 -m http.server 5500
+# Tarayıcıda: http://localhost:5500/index-modular.html
+```
+
+### Tek Dosya Versiyonu
+```bash
+cd pinpon
+python3 -m http.server 5500
+# Tarayıcıda: http://localhost:5500/index.html
 ```
 
 ## 🛠️ Teknolojiler
 
-- **3D Grafik**: Three.js
-- **Fizik**: Özel fizik motoru (Magnus etkisi, yerçekimi)
-- **Ses**: Web Audio API
-- **Online**: LocalStorage (demo), Socket.io (server)
-
-## 🎯 İpuçları
-
-1. **Spin'i Gözle**: Topun etrafındaki renkli halka spin yönünü gösterir
-2. **Hızlı Hareket**: Ne kadar hızlı hareket edersen o kadar çok spin
-3. **Zamanlama**: Topa doğru anda vur, geç kalma
-4. **Karışık Oyna**: Farklı spin'leri karıştır, rakibi şaşırt
+- **Three.js** r160 - 3D rendering (ES Modules)
+- **Web Audio API** - Ses efektleri
+- **ES Modules** - Modüler JavaScript
 
 ## 📜 Lisans
 
@@ -111,4 +131,4 @@ MIT License
 
 ---
 
-� İyi oyunlar!
+🎾 İyi oyunlar!

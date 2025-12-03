@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏓 3D Ping Pong Pro</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <canvas id="game-canvas"></canvas>
+    <div id="custom-cursor"></div>
+    
+    <!-- ANA MENÜ -->
+    <div id="menu-screen">
+        <h1 class="title">🏓 PING PONG PRO</h1>
+        <p class="subtitle">3D Masa Tenisi Simülasyonu</p>
+        
+        <button class="menu-btn btn-bot" id="btn-bot">🤖 Bota Karşı</button>
+        <button class="menu-btn btn-practice" id="btn-practice">🎯 Antrenman</button>
+        <button class="menu-btn btn-online" id="btn-online">🌐 2 Kişilik</button>
+        
+        <div class="info">
+            <strong>🖱️ Fare Hareketi</strong> = Raket Kontrolü<br>
+            <strong>⬅️ Sola Çekerek Vur</strong> = Sağa Falso<br>
+            <strong>➡️ Sağa Çekerek Vur</strong> = Sola Falso<br>
+            <strong>⬆️⬇️ Yukarı/Aşağı</strong> = Topspin/Backspin<br>
+            <span class="key">SPACE</span> veya <span class="key">TIKLA</span> = Servis
+        </div>
+    </div>
+    
+    <!-- OYUN UI -->
+    <div id="game-ui">
+        <div id="score-board">
+            <div class="score p1">
+                <div class="score-label">Sen</div>
+                <div class="score-value" id="score-p1">0</div>
+            </div>
+            <div class="score p2">
+                <div class="score-label">Rakip</div>
+                <div class="score-value" id="score-p2">0</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- SPIN & POWER INDICATORS -->
+    <div id="spin-indicator">
+        <div id="spin-arrow"></div>
+        <div id="spin-label">SPIN</div>
+    </div>
+    
+    <div id="power-meter">
+        <div id="power-fill"></div>
+        <div id="power-label">GÜÇ</div>
+    </div>
+    
+    <!-- MESAJLAR -->
+    <div id="combo"></div>
+    <div id="message"></div>
+    
+    <!-- TUTORIAL -->
+    <div id="tutorial">
+        <span class="key">SPACE</span> ile topu at, sonra <strong>raketinle vur!</strong>
+    </div>
+    
+    <!-- PAUSE EKRANI -->
+    <div id="pause-screen">
+        <h2 style="font-size: 3rem; margin-bottom: 40px;">⏸️ DURAKLATILDI</h2>
+        <button class="menu-btn btn-bot" id="btn-resume">▶️ Devam Et</button>
+        <button class="menu-btn btn-practice" id="btn-quit">🏠 Ana Menü</button>
+    </div>
+
+    <!-- THREE.JS & MODÜLLER -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+        }
+    }
+    </script>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
